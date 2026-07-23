@@ -32,7 +32,10 @@
                         <th>Penerbangan</th>
                         <th>Penumpang</th>
                         <th>Harga</th>
-                        <th>Status</th>
+                        <th>Status Booking</th>
+                        <th>Status Bayar</th>
+                        <th>Payment Type</th>
+                        <th>Transaction ID</th>
                         <th>Tanggal</th>
                     </tr>
                 </thead>
@@ -45,20 +48,40 @@
                         <td>{{ $booking->passenger->full_name ?? $booking->passenger->name ?? '-' }}</td>
                         <td>Rp {{ number_format($booking->total_price, 0, ',', '.') }}</td>
                         <td>
+@php
+    $sColor = match($booking->status) {
+        'confirmed' => 'success',
+        'cancelled' => 'danger',
+        'paid', 'PAID' => 'info',
+        'UNPAID' => 'warning',
+        'PENDING' => 'warning',
+        'FAILED' => 'danger',
+        'REFUNDED' => 'info',
+        default => 'warning'
+    };
+@endphp
+                            <span class="badge bg-{{ $sColor }}">{{ $booking->status }}</span>
+                        </td>
+                        <td>
                             @php
-                                $sColor = match($booking->status) {
-                                    'confirmed' => 'success',
-                                    'cancelled' => 'danger',
-                                    'paid' => 'info',
-                                    default => 'warning'
+                                $payStatus = optional($booking->payment)->payment_status ?? '-';
+                                $payColor = match($payStatus) {
+                                    'SUCCESS' => 'success',
+                                    'PENDING' => 'warning',
+                                    'FAILED', 'EXPIRED' => 'danger',
+                                    'CANCELLED' => 'secondary',
+                                    'REFUNDED' => 'info',
+                                    default => 'secondary'
                                 };
                             @endphp
-                            <span class="badge bg-{{ $sColor }}">{{ ucfirst($booking->status) }}</span>
+                            <span class="badge bg-{{ $payColor }}">{{ $payStatus }}</span>
                         </td>
+                        <td>{{ optional($booking->payment)->payment_type ?? '-' }}</td>
+                        <td><small>{{ optional($booking->payment)->transaction_id ?? '-' }}</small></td>
                         <td>{{ $booking->created_at->format('d M Y H:i') }}</td>
                     </tr>
                     @empty
-                    <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data booking.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">Belum ada data booking.</td></tr>
                     @endforelse
                 </tbody>
             </table>

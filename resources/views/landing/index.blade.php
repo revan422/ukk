@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkyLine Airlines - Pesan Tiket Pesawat Murah</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0a192f">
     <style>
         :root {
             --primary-navy: #0a192f;
@@ -32,7 +36,7 @@
         .navbar-custom {
             background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
             padding: 15px 0;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand {
@@ -46,7 +50,7 @@
         }
 
         .nav-link {
-            color: rgba(255,255,255,0.9) !important;
+            color: rgba(255, 255, 255, 0.9) !important;
             font-weight: 500;
             margin: 0 10px;
             transition: all 0.3s;
@@ -96,7 +100,7 @@
         }
 
         .hero-subtitle {
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.9);
             font-size: 18px;
             text-align: center;
             margin-bottom: 40px;
@@ -107,7 +111,7 @@
             background: white;
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             margin-bottom: 40px;
         }
 
@@ -147,14 +151,16 @@
             margin-right: 8px;
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             border-radius: 10px;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
             transition: all 0.3s;
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--gold);
             box-shadow: 0 0 0 0.2rem rgba(244, 180, 0, 0.25);
         }
@@ -199,7 +205,7 @@
 
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
         }
 
         .feature-icon {
@@ -256,13 +262,13 @@
             overflow: hidden;
             height: 300px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s;
         }
 
         .destination-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
         .destination-img {
@@ -309,7 +315,7 @@
 
         .flight-card:hover {
             border-color: var(--gold);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transform: translateY(-5px);
         }
 
@@ -353,13 +359,13 @@
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
             transition: all 0.3s;
         }
 
         .airline-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .airline-code {
@@ -393,7 +399,7 @@
         }
 
         .footer-links a {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             transition: all 0.3s;
         }
@@ -412,7 +418,7 @@
         .social-links a {
             width: 40px;
             height: 40px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -427,11 +433,11 @@
         }
 
         .footer-bottom {
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: 40px;
             padding-top: 20px;
             text-align: center;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         /* Responsive */
@@ -450,6 +456,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
@@ -482,7 +489,9 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{ route('bookings.history') }}">Riwayat Booking</a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li>
                                     <form action="{{ route('logout') }}" method="POST" class="d-inline">
                                         @csrf
@@ -530,8 +539,9 @@
                                 <label class="form-label">Dari</label>
                                 <select name="departure" class="form-select" required>
                                     <option value="">Pilih Bandara</option>
-                                    @foreach(\App\Models\Airport::all() as $airport)
-                                        <option value="{{ $airport->id }}">{{ $airport->name }} ({{ $airport->code }})</option>
+                                    @foreach (\App\Models\Airport::all() as $airport)
+                                        <option value="{{ $airport->id }}">{{ $airport->name }} ({{ $airport->code }})
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -539,14 +549,16 @@
                                 <label class="form-label">Ke</label>
                                 <select name="arrival" class="form-select" required>
                                     <option value="">Pilih Bandara</option>
-                                    @foreach(\App\Models\Airport::all() as $airport)
-                                        <option value="{{ $airport->id }}">{{ $airport->name }} ({{ $airport->code }})</option>
+                                    @foreach (\App\Models\Airport::all() as $airport)
+                                        <option value="{{ $airport->id }}">{{ $airport->name }}
+                                            ({{ $airport->code }})</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Tanggal</label>
-                                <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}" required min="{{ date('Y-m-d') }}">
+                                <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}"
+                                    required min="{{ date('Y-m-d') }}">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Kelas</label>
@@ -621,7 +633,7 @@
             'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=600&auto=format&fit=crop&q=80', // Bali (Airplane on runway/tarmac)
             'https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?w=600&auto=format&fit=crop&q=80', // Medan (Airplane wing sunset)
             'https://images.unsplash.com/photo-1525624286412-4099c83c1bc8?w=600&auto=format&fit=crop&q=80', // Makassar (Airplane flying)
-            'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=600&auto=format&fit=crop&q=80'  // Batam (Airplane passenger jet)
+            'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=600&auto=format&fit=crop&q=80', // Batam (Airplane passenger jet)
         ];
     @endphp
     <section class="destinations-section" id="destinations">
@@ -631,12 +643,11 @@
                 <p>Jelajahi destinasi favorit para traveler</p>
             </div>
             <div class="row">
-                @foreach($popularDestinations as $airport)
+                @foreach ($popularDestinations as $airport)
                     <div class="col-md-4 col-sm-6">
                         <div class="destination-card">
                             <img src="{{ $destinationImages[$loop->index % count($destinationImages)] }}"
-                                 alt="{{ $airport->name }}"
-                                 class="destination-img">
+                                alt="{{ $airport->name }}" class="destination-img">
                             <div class="destination-overlay">
                                 <h3 class="destination-name">{{ $airport->city }}</h3>
                                 <p class="destination-flights">{{ $airport->departure_flights_count }} penerbangan</p>
@@ -656,7 +667,7 @@
                 <p>Promo spesial untuk perjalanan Anda</p>
             </div>
             <div class="row">
-                @foreach($cheapFlights as $flight)
+                @foreach ($cheapFlights as $flight)
                     <div class="col-md-6">
                         <div class="flight-card">
                             <div class="row align-items-center">
@@ -680,7 +691,8 @@
                                     <div class="flight-price">
                                         Rp {{ number_format($flight->price, 0, ',', '.') }}
                                     </div>
-                                    <a href="{{ route('bookings.selectSeat', $flight->id) }}" class="btn btn-search mt-2">
+                                    <a href="{{ route('bookings.selectSeat', $flight->id) }}"
+                                        class="btn btn-search mt-2">
                                         Pesan Sekarang
                                     </a>
                                 </div>
@@ -700,7 +712,7 @@
                 <p>Bekerjasama dengan maskapai terpercaya</p>
             </div>
             <div class="row g-4">
-                @foreach($popularAirlines as $airline)
+                @foreach ($popularAirlines as $airline)
                     <div class="col-md-3 col-sm-6">
                         <div class="airline-card">
                             <div class="airline-code">{{ $airline->code }}</div>
@@ -721,7 +733,8 @@
                     <h4 class="footer-title">
                         <i class="fas fa-plane-departure me-2"></i>SkyLine Airlines
                     </h4>
-                    <p>Platform pemesanan tiket pesawat online terpercaya dengan harga terbaik dan layanan profesional.</p>
+                    <p>Platform pemesanan tiket pesawat online terpercaya dengan harga terbaik dan layanan profesional.
+                    </p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-twitter"></i></a>
@@ -772,6 +785,30 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/serviceworker.js').catch(err => console.warn('SW reg failed', err));
+        }
+        // beforeinstallprompt placeholder
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-gold position-fixed';
+            btn.style.right = '20px';
+            btn.style.bottom = '20px';
+            btn.textContent = 'Install App';
+            btn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                btn.remove();
+            });
+            document.body.appendChild(btn);
+        });
+    </script>
+    <script>
         function switchTab(tab) {
             // Update active tab
             document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
@@ -779,4 +816,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,0 +1,10 @@
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\AdminController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\AuthController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\BookingController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\Controller.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\FlightController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\LandingController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\ManagerController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\MidtransController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\ProfileController.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Http\Controllers\StaffController.php

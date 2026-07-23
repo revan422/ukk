@@ -7,27 +7,37 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     protected $fillable = [
-        'user_id', 'flight_id', 'passenger_id', 'booking_code',
-        'total_passengers', 'total_price', 'seat_number', 'status'
+        'user_id',
+        'flight_id',
+        'passenger_id',
+        'booking_code',
+        'total_passengers',
+        'total_price',
+        'seat_number',
+        'status',
     ];
 
     protected $casts = [
         'total_price' => 'decimal:2',
     ];
 
-    public function user() {
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function flight() {
+    public function flight()
+    {
         return $this->belongsTo(Flight::class);
     }
 
-    public function passenger() {
+    public function passenger()
+    {
         return $this->belongsTo(Passenger::class);
     }
 
-    public function payment() {
+    public function payment()
+    {
         return $this->hasOne(Payment::class);
     }
 }

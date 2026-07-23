@@ -60,4 +60,14 @@ return [
         'title' => 'Please enter the math result.',
         'post_name' => 'captcha_math',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Google reCAPTCHA Configuration
+    |--------------------------------------------------------------------------
+    | Konfigurasi untuk Google reCAPTCHA v2 (I'm not a robot).
+    | Secret key dan Site key dibaca dari file .env
+    */
+    'nocaptcha_secret' => env('NOCAPTCHA_SECRET', ''),
+    'nocaptcha_sitekey' => env('NOCAPTCHA_SITEKEY', ''),
 ];

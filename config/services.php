@@ -35,12 +35,5 @@ return [
         ],
     ],
 
-'rajaongkir' => [
-    'api_key' => env('RAJAONGKIR_API_KEY'),
-    'base_url' => env('RAJAONGKIR_BASE_URL', 'https://api.rajaongkir.com'),
-    'origin' => env('RAJAONGKIR_ORIGIN'),
-    'service' => env('RAJAONGKIR_SERVICE', 'regular'),
-    'courier' => env('RAJAONGKIR_COURIER', 'POS'),
-],
 
 ];

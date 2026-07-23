@@ -7,16 +7,28 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     protected $fillable = [
-        'booking_id', 'payment_method', 'amount', 'payment_status',
-        'transaction_id', 'payment_proof', 'paid_at'
+        'booking_id',
+        'payment_method',
+        'amount',
+        'payment_status',
+        'transaction_id',
+        'payment_proof',
+        'paid_at',
+        'snap_token',
+        'payment_type',
+        'transaction_status',
+        'fraud_status',
+        'expired_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'expired_at' => 'datetime',
     ];
 
-    public function booking() {
+    public function booking()
+    {
         return $this->belongsTo(Booking::class);
     }
 }

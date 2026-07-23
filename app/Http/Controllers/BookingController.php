@@ -5,14 +5,23 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use App\Models\Flight;
 use App\Models\Seat;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Passenger;
+use App\Services\MidtransService;
 
 class BookingController extends Controller
 {
+    protected $midtrans;
+
+    public function __construct(MidtransService $midtrans)
+    {
+        $this->midtrans = $midtrans;
+    }
+
     // Tampilkan halaman pemilihan kursi
     public function selectSeat($flightId)
     {
@@ -49,6 +58,7 @@ class BookingController extends Controller
                 'seat_id' => $request->seat_id,
                 'seat_number' => $seat->seat_number,
                 'price' => $seat->price ?? $seat->flight->price,
+                'seat_class' => $seat->seat_class,
             ]
         ]);
 
@@ -68,7 +78,7 @@ class BookingController extends Controller
         return view('bookings.passenger', compact('flight', 'bookingData'));
     }
 
-    // Proses form data penumpang - UPDATED dengan RajaOngkir
+    // Proses form data penumpang
     public function processPassenger(Request $request)
     {
         $rules = [
@@ -77,14 +87,6 @@ class BookingController extends Controller
             'id_card_number' => 'required|string|min:10|max:30',
             'gender' => 'required|in:male,female',
         ];
-
-        if ($request->has('shipping_required')) {
-            $rules['shipping_province_id'] = 'required';
-            $rules['shipping_province_name'] = 'required';
-            $rules['shipping_city_name'] = 'required';
-            $rules['shipping_address'] = 'required|string';
-            $rules['shipping_cost'] = 'required|numeric|min:0';
-        }
 
         $request->validate($rules);
 
@@ -96,23 +98,10 @@ class BookingController extends Controller
             'gender' => $request->gender,
         ];
 
-        if ($request->has('shipping_required')) {
-            // Shipping cost sudah dihitung oleh JavaScript dari RajaOngkir Komerce API
-            // dan dikirim via hidden field shipping_cost
-            $bookingData['shipping'] = [
-                'required' => true,
-                'province_id' => $request->shipping_province_id,
-                'province_name' => $request->shipping_province_name,
-                'city_name' => $request->shipping_city_name,
-                'address' => $request->shipping_address,
-                'cost' => $request->shipping_cost,
-            ];
-        } else {
-            $bookingData['shipping'] = [
-                'required' => false,
-                'cost' => 0,
-            ];
-        }
+        $bookingData['shipping'] = [
+            'required' => false,
+            'cost' => 0,
+        ];
 
         session(['booking_data' => $bookingData]);
 
@@ -136,24 +125,21 @@ class BookingController extends Controller
         $flight = Flight::with(['airline', 'departureAirport', 'arrivalAirport'])->findOrFail($bookingData['flight_id']);
         $seat = Seat::findOrFail($bookingData['seat_id']);
 
-        return view('bookings.confirmation', compact('flight', 'seat', 'bookingData'));
+        $clientKey = $this->midtrans->getClientKey();
+        $snapUrl = $this->midtrans->getSnapJsUrl();
+
+        return view('bookings.confirmation', compact('flight', 'seat', 'bookingData', 'clientKey', 'snapUrl'));
     }
 
-    // Proses pembayaran - LANGSUNG SUKSES (tanpa Midtrans) - UPDATED
+    // Proses booking: simpan ke database, generate Snap token
     public function processPayment(Request $request)
     {
-        $request->validate([
-            'payment_method' => 'required|in:bank_transfer,credit_card,debit_card,e_wallet',
-        ]);
-
         $bookingData = session('booking_data');
 
-        // Validasi: Pastikan booking_data ada
         if (!$bookingData) {
             return redirect()->route('flights.index')->withErrors(['error' => 'Data booking tidak ditemukan. Silakan mulai dari awal.']);
         }
 
-        // Validasi: Pastikan semua data yang diperlukan ada
         $requiredKeys = ['flight_id', 'seat_id', 'seat_number', 'price', 'passenger'];
         foreach ($requiredKeys as $key) {
             if (!isset($bookingData[$key])) {
@@ -161,18 +147,12 @@ class BookingController extends Controller
             }
         }
 
-        // Validasi: Pastikan data passenger ada dan lengkap
-        if (!isset($bookingData['passenger']) || empty($bookingData['passenger'])) {
-            return redirect()->route('bookings.passenger')->withErrors(['error' => 'Data penumpang tidak lengkap. Silakan isi data penumpang terlebih dahulu.']);
-        }
-
-        // Validasi passenger fields - UPDATED
-        $passengerData = $bookingData['passenger'];
-        if (!isset($passengerData['full_name']) || !isset($passengerData['date_of_birth']) || !isset($passengerData['id_card_number']) || !isset($passengerData['gender'])) {
+        $passengerData = $bookingData['passenger'] ?? null;
+        if (!$passengerData || !isset($passengerData['full_name']) || !isset($passengerData['date_of_birth']) || !isset($passengerData['id_card_number']) || !isset($passengerData['gender'])) {
             return redirect()->route('bookings.passenger')->withErrors(['error' => 'Data penumpang tidak lengkap. Pastikan semua field terisi.']);
         }
 
-        // Buat Passenger - UPDATED
+        // Create passenger
         $passenger = Passenger::create([
             'user_id' => Auth::id(),
             'full_name' => $passengerData['full_name'],
@@ -181,10 +161,9 @@ class BookingController extends Controller
             'gender' => $passengerData['gender'],
         ]);
 
-        // Buat Booking dengan status CONFIRMED (langsung sukses) - UPDATE dengan RajaOngkir
-        $shippingCost = isset($bookingData['shipping']['required']) && $bookingData['shipping']['required'] ? $bookingData['shipping']['cost'] : 0.00;
-        $totalPrice = $bookingData['price'] + $shippingCost;
+        $totalPrice = $bookingData['price'];
 
+        // Create booking with UNPAID status
         $booking = Booking::create([
             'user_id' => Auth::id(),
             'flight_id' => $bookingData['flight_id'],
@@ -192,43 +171,66 @@ class BookingController extends Controller
             'booking_code' => strtoupper(Str::random(8)),
             'total_passengers' => 1,
             'total_price' => $totalPrice,
-            'shipping_cost' => $shippingCost,
-            'shipping_province' => $bookingData['shipping']['province_name'] ?? null,
-            'shipping_city' => $bookingData['shipping']['city_name'] ?? null,
-            'shipping_address' => $bookingData['shipping']['address'] ?? null,
             'seat_number' => $bookingData['seat_number'],
-            'status' => 'confirmed',
+            'status' => 'UNPAID',
         ]);
 
-        // Buat Payment dengan status SUCCESS - UPDATE dengan RajaOngkir
+        // Create payment record
         Payment::create([
             'booking_id' => $booking->id,
-            'payment_method' => $request->payment_method,
+            'payment_method' => 'midtrans_snap',
             'amount' => $totalPrice,
-            'payment_status' => 'success',
-            'transaction_id' => 'TRX-' . strtoupper(Str::random(10)),
-            'paid_at' => now(),
+            'payment_status' => 'PENDING',
+            'transaction_id' => 'BOOKING-' . $booking->id . '-' . now()->timestamp,
         ]);
 
-        // Update status kursi
+        // Lock seat immediately to avoid double booking
         $seat = Seat::findOrFail($bookingData['seat_id']);
         $seat->update(['status' => 'booked']);
 
-        // Update available_seats di flight
         $flight = Flight::findOrFail($bookingData['flight_id']);
-        $flight->update(['available_seats' => $flight->available_seats - 1]);
+        $flight->update(['available_seats' => max(0, $flight->available_seats - 1)]);
 
-        // Hapus session
+        // Clear session booking data
         session()->forget('booking_data');
 
-        // Langsung redirect ke halaman sukses
-        return redirect()->route('bookings.success', $booking->id);
+        // Redirect to booking detail page where user can pay with Snap popup
+        return redirect()->route('bookings.show', $booking->id);
+    }
+
+    // Tampilkan halaman detail booking dengan Snap payment
+    public function show($bookingId)
+    {
+        $booking = Booking::with([
+            'flight.airline',
+            'flight.departureAirport',
+            'flight.arrivalAirport',
+            'passenger',
+            'payment',
+            'user'
+        ])->findOrFail($bookingId);
+
+        // Ensure booking belongs to authenticated user
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $clientKey = $this->midtrans->getClientKey();
+        $snapUrl = $this->midtrans->getSnapJsUrl();
+
+        return view('bookings.show', compact('booking', 'clientKey', 'snapUrl'));
     }
 
     // Tampilkan halaman sukses
     public function success($bookingId)
     {
-        $booking = Booking::with(['flight.airline', 'flight.departureAirport', 'flight.arrivalAirport', 'passenger', 'payment'])->findOrFail($bookingId);
+        $booking = Booking::with([
+            'flight.airline',
+            'flight.departureAirport',
+            'flight.arrivalAirport',
+            'passenger',
+            'payment'
+        ])->findOrFail($bookingId);
 
         return view('bookings.success', compact('booking'));
     }
@@ -237,7 +239,13 @@ class BookingController extends Controller
     public function history()
     {
         $bookings = Booking::where('user_id', Auth::id())
-            ->with(['flight.airline', 'flight.departureAirport', 'flight.arrivalAirport', 'passenger'])
+            ->with([
+                'flight.airline',
+                'flight.departureAirport',
+                'flight.arrivalAirport',
+                'passenger',
+                'payment'
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 

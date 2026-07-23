@@ -1,0 +1,11 @@
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Airline.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Airplane.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Airport.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Booking.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Destination.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Flight.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Passenger.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Payment.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Promo.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\Seat.php
+C:\Users\bazma\OneDrive\Documents\Revan\uuk_saas\airline-app\app\Models\User.php

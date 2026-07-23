@@ -10,6 +10,8 @@ use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MidtransController;
+use App\Http\Controllers\VerificationController;
 
 // Halaman Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -41,105 +43,25 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->middleware('guest')->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('guest')->name('password.update');
 
-// Routes AJAX Captcha Verification
-Route::post('/captcha/verify-checkbox', [AuthController::class, 'verifyCheckboxCaptcha'])->name('captcha.verifyCheckbox');
-
-// Routes RajaOngkir Komerce API
-Route::get('/rajaongkir/provinces', function (\App\Services\RajaOngkirService $service) {
-    return response()->json($service->getProvinces());
-})->name('rajaongkir.provinces');
-
-Route::get('/rajaongkir/destinations', function (\Illuminate\Http\Request $request, \App\Services\RajaOngkirService $service) {
-    $request->validate(['search' => 'required|string|min:3']);
-    return response()->json($service->getDomesticDestination($request->search));
-})->name('rajaongkir.destinations');
-
-Route::post('/rajaongkir/calculate-cost', function (\Illuminate\Http\Request $request, \App\Services\RajaOngkirService $service) {
-    $request->validate([
-        'origin'      => 'required',
-        'destination' => 'required',
-        'weight'      => 'required|integer|min:1',
-        'courier'     => 'required|string',
-        'service'     => 'nullable|string',
-    ]);
-    return response()->json($service->calculateDomesticCost(
-        $request->origin,
-        $request->destination,
-        $request->weight,
-        $request->courier,
-        $request->service ?? 'lowest'
-    ));
-})->name('rajaongkir.calculate-cost');
-
-Route::get('/tes-rajaongkir', function () {
-
-    $response = Http::timeout(10)
-        ->withHeaders([
-            'key' => env('RAJAONGKIR_API_KEY'),
-        ])
-        ->get(
-            env('RAJAONGKIR_BASE_URL') . '/destination/domestic-destination',
-            [
-                'search' => 'Cicadas Ciampea Bogor'
-            ]
-        );
-
-    return response()->json([
-        'status' => $response->status(),
-        'body' => $response->json(),
-    ]);
-
-});
-
-// =========================
-// TEST HITUNG ONGKIR
-// ===
-
-Route::get('/tes-ongkir', function () {
-
-    $response = Http::withHeaders([
-        'key' => env('RAJAONGKIR_API_KEY'),
-    ])->post(
-        env('RAJAONGKIR_BASE_URL') . '/calculate/domestic-cost',
-        [
-            'origin' => env('RAJAONGKIR_ORIGIN'),
-            'destination' => 8118,
-            'weight' => 1000,
-            'courier' => 'pos',
-            'price' => 'lowest'
-        ]
-    );
-
-    return response()->json($response->json());
-
-});
+// RajaOngkir integration removed
 
 // Routes Email Verification (menggunakan fitur bawaan Laravel)
-Route::get('/email/verify', function () {
-    return view('auth.verify');
-})->middleware('auth')->name('verification.notice');
+Route::get('/email/verify', [VerificationController::class, 'showNotice'])
+    ->middleware('auth')
+    ->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $request, $id, $hash) {
-    $user = \App\Models\User::findOrFail($id);
+Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->middleware(['signed'])
+    ->name('verification.verify');
 
-    // Verify the email hash
-    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-        abort(403, 'Tautan verifikasi tidak valid.');
-    }
+Route::post('/email/verification-notification', [VerificationController::class, 'resend'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.resend');
 
-    if (!$user->hasVerifiedEmail()) {
-        $user->markEmailAsVerified();
-        event(new \Illuminate\Auth\Events\Verified($user));
-    }
-
-    // Redirect ke halaman login dengan pesan sukses (TIDAK auto-login)
-    return redirect()->route('login')->with('success', 'Email Anda telah berhasil diverifikasi! Silakan login.');
-})->middleware(['signed'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('message', 'Link verifikasi baru telah dikirim!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
+// Route untuk kirim ulang verifikasi dari halaman expired (tanpa auth)
+Route::post('/email/verification-send', [VerificationController::class, 'sendToEmail'])
+    ->middleware(['throttle:3,1'])
+    ->name('verification.send');
 
 // Routes Pencarian Penerbangan (Bisa diakses tanpa login)
 Route::get('/flights', [FlightController::class, 'index'])->name('flights.index');
@@ -158,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bookings/process-passenger', [BookingController::class, 'processPassenger'])->name('bookings.processPassenger');
     Route::get('/bookings/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
     Route::post('/bookings/process-payment', [BookingController::class, 'processPayment'])->name('bookings.processPayment');
+    Route::get('/bookings/{bookingId}', [BookingController::class, 'show'])->name('bookings.show');
     Route::get('/bookings/success/{bookingId}', [BookingController::class, 'success'])->name('bookings.success');
 
     // Routes Profile Settings
@@ -229,3 +152,8 @@ Route::middleware(['auth', 'staff', 'verified'])->group(function () {
     Route::get('/staff/manifest/{flightId}', [StaffController::class, 'manifest'])->name('staff.manifest');
     Route::get('/staff/flights', [StaffController::class, 'flightMonitoring'])->name('staff.flights');
 });
+
+// Midtrans Payment Routes
+Route::post('/payment', [MidtransController::class, 'createTransaction'])->name('payment.create');
+Route::post('/midtrans/callback', [MidtransController::class, 'callback'])->name('midtrans.callback');
+Route::get('/payment/status/{booking}', [MidtransController::class, 'checkStatus'])->name('payment.status');

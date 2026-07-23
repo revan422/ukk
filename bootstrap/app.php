@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\StaffMiddleware::class,
             'cs' => \App\Http\Middleware\CsMiddleware::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/*',
+            'payment',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
