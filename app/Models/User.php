@@ -59,6 +59,18 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Override: Admin, Staff, dan Manager selalu dianggap verified
+     * sehingga tidak perlu verifikasi email untuk mengakses panel internal.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if (in_array($this->role, ['admin', 'staff', 'manager'])) {
+            return true;
+        }
+        return parent::hasVerifiedEmail();
+    }
+
+    /**
      * Kirim notifikasi reset password menggunakan notifikasi bawaan Laravel.
      * Ini akan mengirim email dengan template HTML yang sudah disediakan Laravel.
      */
@@ -66,5 +78,13 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         // Gunakan notifikasi bawaan Laravel (mengirim email HTML dengan tombol reset)
         $this->notify(new \Illuminate\Auth\Notifications\ResetPassword($token));
+    }
+
+    /**
+     * Override the email verification notification to use custom template.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 }

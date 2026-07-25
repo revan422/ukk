@@ -7,26 +7,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
-use App\Services\CaptchaService;
 use App\Http\Requests\RegisterRequest;
-use App\Http\Requests\LoginRequest;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    protected $captcha;
-
-    public function __construct(CaptchaService $captcha)
-    {
-        $this->captcha = $captcha;
-    }
-
-    /**
-     * The login method does NOT use captcha validation.
-     * reCAPTCHA is only used on the Register page.
-     */
     private function getLoginRoleInfo(?string $role): ?array
     {
         $roleLabels = [
@@ -38,8 +25,6 @@ class AuthController extends Controller
         return $role ? ($roleLabels[$role] ?? null) : null;
     }
 
-    // Tampilkan halaman Login (dengan role berdasarkan URL)
-    // Google reCAPTCHA TIDAK digunakan di halaman Login
     public function showLogin(Request $request)
     {
         $routeName = $request->route()->getName();
@@ -56,7 +41,6 @@ class AuthController extends Controller
         return view('auth.login', compact('role', 'roleInfo'));
     }
 
-    // Tampilkan halaman Register (dengan role berdasarkan URL)
     public function showRegister(Request $request)
     {
         $routeName = $request->route()->getName();
@@ -78,25 +62,12 @@ class AuthController extends Controller
         ];
 
         $roleInfo = $roleLabels[$role];
-        $siteKey = $this->captcha->getSiteKey();
 
-        return view('auth.register', compact('role', 'roleInfo', 'siteKey'));
+        return view('auth.register', compact('role', 'roleInfo'));
     }
 
-    // Proses Register menggunakan RegisterRequest + Google reCAPTCHA
     public function register(RegisterRequest $request)
     {
-        // 1. Validasi Google reCAPTCHA server-side
-        $recaptchaResponse = $request->input('g-recaptcha-response');
-        $verified = $this->captcha->verify($recaptchaResponse);
-
-        if (!$verified) {
-            return back()->withErrors([
-                'g-recaptcha-response' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
-            ])->withInput();
-        }
-
-        // 2. Buat user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -104,56 +75,49 @@ class AuthController extends Controller
             'role' => $request->role,
         ]);
 
-        // 3. Fire Registered Event - otomatis mengirim Email Verification via Notification
+        // Untuk admin, staff, manager langsung verified dan redirect ke dashboard
+        if (in_array($user->role, ['admin', 'staff', 'manager'])) {
+            $user->markEmailAsVerified();
+            Auth::login($user);
+
+            $routes = [
+                'admin' => 'admin.dashboard',
+                'staff' => 'staff.dashboard',
+                'manager' => 'manager.dashboard',
+            ];
+
+            return redirect()->route($routes[$user->role])
+                ->with('success', 'Registrasi berhasil!');
+        }
+
+        // Untuk customer: kirim email verifikasi dan arahkan ke halaman verifikasi
         try {
             event(new Registered($user));
         } catch (\Exception $e) {
-            Log::error('Gagal mengirim email verifikasi: ' . $e->getMessage(), [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
-            // Jangan crash aplikasi, user tetap terdaftar
+            Log::error('Gagal mengirim email verifikasi saat register: ' . $e->getMessage());
         }
 
-        // 4. Redirect ke halaman login dengan pesan sukses
-        return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi sebelum login.');
+        // Generate URL verifikasi untuk ditampilkan langsung di halaman
+        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
+        );
+
+        Auth::login($user);
+
+        return redirect()->route('verification.notice')
+            ->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi.')
+            ->with('verification_url', $verificationUrl);
     }
 
-    // Proses Login - TANPA Google reCAPTCHA
     public function login(Request $request)
     {
-        // 1. Validasi input (hanya email & password, tanpa captcha)
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // 2. Cari user berdasarkan email
-        $user = User::where('email', $request->email)->first();
-
-        // 4. Cek apakah user ada
-        if (!$user) {
-            return back()->withErrors([
-                'email' => 'Email atau password yang Anda masukkan salah.',
-            ])->onlyInput('email');
-        }
-
-        // 5. Cek apakah email sudah diverifikasi
-        if (!$user->hasVerifiedEmail()) {
-            return back()->withErrors([
-                'email' => 'Silakan verifikasi email Anda terlebih dahulu.',
-            ])->onlyInput('email');
-        }
-
-        // 6. Cek password
-        if (!Hash::check($request->password, $user->password)) {
-            return back()->withErrors([
-                'email' => 'Email atau password yang Anda masukkan salah.',
-            ])->onlyInput('email');
-        }
-
-        // 7. Proses login
-        // 3. Cek password dulu sebelum attempt untuk pesan error yang lebih baik
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
@@ -162,22 +126,32 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
-        // 4. Cek apakah email sudah diverifikasi
         if (!$user->hasVerifiedEmail()) {
             return back()->withErrors([
                 'email' => 'Silakan verifikasi email Anda terlebih dahulu.',
             ])->onlyInput('email');
         }
 
-        // 5. Cek password
         if (!Hash::check($request->password, $user->password)) {
             return back()->withErrors([
                 'email' => 'Email atau password yang Anda masukkan salah.',
             ])->onlyInput('email');
         }
 
-        // 6. Proses login
         if (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
+            $request->session()->regenerate();
+
+            // Check if there's a redirect after login (for booking flow)
+            $redirectAfterLogin = $request->session()->get('redirect_after_login');
+            
+            if ($redirectAfterLogin) {
+                $request->session()->forget('redirect_after_login');
+                return redirect($redirectAfterLogin);
+            }
+
+            // Redirect based on role
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
             } elseif ($user->role === 'manager') {
                 return redirect()->route('manager.dashboard');
             } elseif ($user->role === 'staff') {
@@ -192,7 +166,6 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    // Proses Logout
     public function logout(Request $request)
     {
         Auth::logout();
@@ -202,13 +175,6 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-    // Tampilkan Form Lupa Password
-    public function showLinkRequestForm()
-    {
-        return view('auth.forgot-password');
-    }
-
-    // Kirim Link Reset Password
     public function sendResetLinkEmail(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -222,7 +188,11 @@ class AuthController extends Controller
             : back()->withErrors(['email' => __($status)]);
     }
 
-    // Tampilkan Form Reset Password
+    public function showLinkRequestForm()
+    {
+        return view('auth.forgot-password');
+    }
+
     public function showResetForm(Request $request, $token = null)
     {
         return view('auth.reset-password')->with(
@@ -230,7 +200,6 @@ class AuthController extends Controller
         );
     }
 
-    // Proses Reset Password
     public function resetPassword(Request $request)
     {
         $request->validate([

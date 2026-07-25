@@ -67,18 +67,20 @@ Route::post('/email/verification-send', [VerificationController::class, 'sendToE
 Route::get('/flights', [FlightController::class, 'index'])->name('flights.index');
 Route::get('/flights/search', [FlightController::class, 'search'])->name('flights.search');
 
-// Routes Customer (WAJIB Login + Verifikasi Email)
-Route::middleware(['auth', 'verified'])->group(function () {
+// Routes Booking Flow (Bisa diakses tanpa login sampai pembayaran)
+Route::get('/bookings/select-seat/{flightId}', [BookingController::class, 'selectSeat'])->name('bookings.selectSeat');
+Route::post('/bookings/process-seat', [BookingController::class, 'processSeat'])->name('bookings.processSeat');
+Route::get('/bookings/passenger', [BookingController::class, 'passengerForm'])->name('bookings.passenger');
+Route::post('/bookings/process-passenger', [BookingController::class, 'processPassenger'])->name('bookings.processPassenger');
+Route::get('/bookings/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
+
+// Routes Customer (WAJIB Login)
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
     Route::get('/bookings/history', [BookingController::class, 'history'])->name('bookings.history');
-    Route::get('/bookings/select-seat/{flightId}', [BookingController::class, 'selectSeat'])->name('bookings.selectSeat');
-    Route::post('/bookings/process-seat', [BookingController::class, 'processSeat'])->name('bookings.processSeat');
-    Route::get('/bookings/passenger', [BookingController::class, 'passengerForm'])->name('bookings.passenger');
-    Route::post('/bookings/process-passenger', [BookingController::class, 'processPassenger'])->name('bookings.processPassenger');
-    Route::get('/bookings/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
     Route::post('/bookings/process-payment', [BookingController::class, 'processPayment'])->name('bookings.processPayment');
     Route::get('/bookings/{bookingId}', [BookingController::class, 'show'])->name('bookings.show');
     Route::get('/bookings/success/{bookingId}', [BookingController::class, 'success'])->name('bookings.success');
@@ -89,8 +91,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/profile/settings/security', [ProfileController::class, 'updateSecurity'])->name('profile.settings.security');
 });
 
-// Routes ADMIN (WAJIB Login + Role Admin + Verifikasi Email)
-Route::middleware(['auth', 'admin', 'verified'])->group(function () {
+// Routes ADMIN (WAJIB Login + Role Admin)
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
 
     // Users CRUD
@@ -131,8 +133,8 @@ Route::middleware(['auth', 'admin', 'verified'])->group(function () {
     Route::get('/admin/bookings', [AdminController::class, 'bookings'])->name('admin.bookings');
 });
 
-// Routes MANAGER (WAJIB Login + Role Manager + Verifikasi Email)
-Route::middleware(['auth', 'manager', 'verified'])->group(function () {
+// Routes MANAGER (WAJIB Login + Role Manager)
+Route::middleware(['auth', 'manager'])->group(function () {
     Route::get('/manager', [ManagerController::class, 'index'])->name('manager.dashboard');
     Route::get('/manager/reports', [ManagerController::class, 'reports'])->name('manager.reports');
     Route::get('/manager/performance', [ManagerController::class, 'performance'])->name('manager.performance');
@@ -142,8 +144,8 @@ Route::middleware(['auth', 'manager', 'verified'])->group(function () {
     Route::get('/manager/occupancy', [ManagerController::class, 'occupancyRate'])->name('manager.occupancy');
 });
 
-// Routes STAFF (WAJIB Login + Role Staff + Verifikasi Email)
-Route::middleware(['auth', 'staff', 'verified'])->group(function () {
+// Routes STAFF (WAJIB Login + Role Staff)
+Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/staff', [StaffController::class, 'index'])->name('staff.dashboard');
     Route::get('/staff/bookings', [StaffController::class, 'bookings'])->name('staff.bookings');
     Route::post('/staff/bookings/{bookingId}/reschedule', [StaffController::class, 'reschedule'])->name('staff.reschedule');

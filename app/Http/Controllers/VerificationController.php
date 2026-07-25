@@ -45,7 +45,14 @@ class VerificationController extends Controller
         $user->markEmailAsVerified();
         event(new \Illuminate\Auth\Events\Verified($user));
 
-        return redirect()->route('login')->with('success', 'Email berhasil diverifikasi! Silakan login.');
+        // Logout jika user masih login (dari halaman verifikasi notice)
+        if (Auth::check()) {
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+        }
+
+        return view('auth.verify-success')->with('success', 'Email berhasil diverifikasi! Silakan login.');
     }
 
     /**

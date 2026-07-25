@@ -134,6 +134,14 @@ class BookingController extends Controller
     // Proses booking: simpan ke database, generate Snap token
     public function processPayment(Request $request)
     {
+        // Cek apakah user sudah login
+        if (!Auth::check()) {
+            // Simpan booking data di session dan redirect ke login
+            return redirect()->route('login')
+                ->with('info', 'Silakan login terlebih dahulu untuk melanjutkan pembayaran.')
+                ->with('redirect_after_login', route('bookings.confirmation'));
+        }
+
         $bookingData = session('booking_data');
 
         if (!$bookingData) {

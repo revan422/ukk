@@ -90,11 +90,14 @@ class AdminController extends Controller
     public function usersDelete($id)
     {
         $user = User::findOrFail($id);
+        
         if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
-            return back()->with('error', 'Tidak dapat menghapus admin terakhir!');
+            return response()->json(['success' => false, 'message' => 'Tidak dapat menghapus admin terakhir!'], 400);
         }
+        
         $user->delete();
-        return redirect()->route('admin.users')->with('success', 'User berhasil dihapus!');
+        
+        return response()->json(['success' => true, 'message' => 'User berhasil dihapus!']);
     }
 
     // =================== FLIGHTS CRUD ===================

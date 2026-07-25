@@ -58,14 +58,25 @@ class MidtransController extends Controller
                     ->where('seat_number', $booking->seat_number)
                     ->first();
 
-        $params = $this->midtrans->buildTransactionParams(
-            $booking,
-            $booking->flight,
-            $booking->passenger,
-            $seat ?? new Seat()
-        );
+        // Validate required data before creating transaction
+        if (!$booking->total_price || $booking->total_price <= 0) {
+            Log::error('Midtrans: Invalid total_price', ['booking_id' => $booking->id, 'total_price' => $booking->total_price]);
+            return response()->json(['error' => 'Data harga tidak valid. Silakan hubungi customer service.'], 400);
+        }
+
+        if (!$booking->flight) {
+            Log::error('Midtrans: Flight not found', ['booking_id' => $booking->id]);
+            return response()->json(['error' => 'Data penerbangan tidak ditemukan.'], 400);
+        }
 
         try {
+            $params = $this->midtrans->buildTransactionParams(
+                $booking,
+                $booking->flight,
+                $booking->passenger,
+                $seat
+            );
+
             $snapToken = $this->midtrans->createSnapToken($params);
 
             // Update payment record with snap token and order_id

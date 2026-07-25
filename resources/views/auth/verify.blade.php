@@ -36,14 +36,34 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(244, 180, 0, 0.4);
         }
+        .btn-gold-outline {
+            background: transparent;
+            color: #f4b400;
+            font-weight: 600;
+            border: 2px solid #f4b400;
+            padding: 10px 25px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-gold-outline:hover {
+            background: rgba(244, 180, 0, 0.1);
+            color: #ffd700;
+            border-color: #ffd700;
+        }
         .email-icon {
             font-size: 5rem;
             color: #f4b400;
             text-shadow: 0 0 30px rgba(244, 180, 0, 0.5);
         }
-        .alert {
+        .alert { border-radius: 8px; border: none; }
+        .link-verifikasi {
+            background: rgba(10, 25, 47, 0.8);
+            border: 1px solid rgba(244, 180, 0, 0.3);
             border-radius: 8px;
-            border: none;
+            padding: 15px;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: #64ffda;
         }
     </style>
 </head>
@@ -56,13 +76,25 @@
                         <div class="email-icon">📧</div>
                         <h3 class="fw-bold mt-3">Verifikasi Email Anda</h3>
                         <p class="text-muted mt-3">
-                            Terima kasih telah mendaftar! Sebelum melanjutkan, mohon verifikasi email Anda dengan mengklik link yang telah kami kirimkan ke:
+                            Terima kasih telah mendaftar! Sebelum melanjutkan, mohon verifikasi email Anda dengan mengklik link yang telah kami kirimkan ke email Anda.
                         </p>
-                        <p class="text-gold fw-bold fs-5">{{ Auth::user()->email }}</p>
+
+                        @if(Auth::check())
+                            <p class="text-gold fw-bold fs-5">{{ Auth::user()->email }}</p>
+                        @endif
 
                         @if (session('message'))
                             <div class="alert alert-success" role="alert">
                                 {{ session('message') }}
+                            </div>
+                        @endif
+
+                        @if (session('verification_url'))
+                            <div class="alert alert-info mt-3">
+                                <strong>🔗 Link Verifikasi (klik langsung):</strong><br>
+                                <a href="{{ session('verification_url') }}" class="btn btn-sm btn-gold mt-2">
+                                    Klik untuk Verifikasi Email
+                                </a>
                             </div>
                         @endif
 

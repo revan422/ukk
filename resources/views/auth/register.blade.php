@@ -5,7 +5,6 @@
     <title>{{ $roleInfo['title'] }} - SkyLine Airlines</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -60,10 +59,6 @@
             font-weight: 700;
             font-size: 16px;
             margin-bottom: 20px;
-        }
-        .g-recaptcha {
-            display: flex;
-            justify-content: center;
         }
     </style>
 </head>
@@ -136,14 +131,6 @@
                                 <label class="form-label">Konfirmasi Password</label>
                                 <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
                             </div>
-
-                             <!-- Google reCAPTCHA -->
-                             <div class="mb-4">
-                                 <div class="g-recaptcha" data-sitekey="{{ $siteKey }}"></div>
-                                 @error('g-recaptcha-response')
-                                     <div class="text-danger small mt-1">{{ $message }}</div>
-                                 @enderror
-                             </div>
 
                              <button type="submit" class="btn btn-gold w-100" id="register-btn">Daftar Sekarang</button>
                          </form>

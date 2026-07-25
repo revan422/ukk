@@ -13,7 +13,6 @@ class MidtransService
     {
         Config::$serverKey = config('midtrans.server_key');
         Config::$clientKey = config('midtrans.client_key');
-        Config::$merchantId = config('midtrans.merchant_id');
         Config::$isProduction = config('midtrans.is_production');
         Config::$isSanitized = config('midtrans.is_sanitized');
         Config::$is3ds = config('midtrans.is_3ds');
@@ -61,7 +60,20 @@ class MidtransService
      */
     public function buildTransactionParams($booking, $flight, $passenger, $seat): array
     {
+        // Pastikan booking sudah di-load dengan relasi yang dibutuhkan
+        if (!$flight && $booking->relationLoaded('flight')) {
+            $flight = $booking->flight;
+        }
+        if (!$passenger && $booking->relationLoaded('passenger')) {
+            $passenger = $booking->passenger;
+        }
+
         $orderId = 'BOOKING-' . $booking->id . '-' . now()->timestamp;
+        $grossAmount = (int) ($booking->total_price ?? 0);
+
+        if ($grossAmount <= 0) {
+            throw new \InvalidArgumentException('Total harga booking harus lebih besar dari 0.');
+        }
 
         $customerName = $passenger->full_name ?? $passenger->name ?? 'Customer';
         $customerEmail = optional($booking->user)->email ?? 'customer@example.com';
@@ -69,8 +81,8 @@ class MidtransService
 
         $itemDetails = [
             [
-                'id' => 'TICKET-' . $flight->flight_number,
-                'price' => (int) $booking->total_price,
+                'id' => 'TICKET-' . ($flight->flight_number ?? 'UNKNOWN'),
+                'price' => $grossAmount,
                 'quantity' => 1,
                 'name' => 'Tiket ' . ($flight->airline->name ?? 'Maskapai') . ' - ' .
                           ($flight->flight_number ?? '') . ' (' .
@@ -83,7 +95,7 @@ class MidtransService
         return [
             'transaction_details' => [
                 'order_id' => $orderId,
-                'gross_amount' => (int) $booking->total_price,
+                'gross_amount' => $grossAmount,
             ],
             'customer_details' => [
                 'first_name' => $customerName,
