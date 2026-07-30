@@ -67,7 +67,13 @@ return [
     |--------------------------------------------------------------------------
     | Konfigurasi untuk Google reCAPTCHA v2 (I'm not a robot).
     | Secret key dan Site key dibaca dari file .env
+    | Kunci 'secret' dan 'sitekey' digunakan oleh paket anhskohbo/no-captcha.
     */
+    'secret' => env('NOCAPTCHA_SECRET', ''),
+    'sitekey' => env('NOCAPTCHA_SITEKEY', ''),
     'nocaptcha_secret' => env('NOCAPTCHA_SECRET', ''),
     'nocaptcha_sitekey' => env('NOCAPTCHA_SITEKEY', ''),
+    'options' => [
+        'timeout' => 30,
+    ],
 ];

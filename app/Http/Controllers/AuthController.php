@@ -118,6 +118,15 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Validasi reCAPTCHA - hanya jika ada input (tidak diwajibkan agar tidak menghalangi login)
+        if ($request->has('g-recaptcha-response') && !empty($request->input('g-recaptcha-response'))) {
+            $request->validate([
+                'g-recaptcha-response' => 'captcha',
+            ], [
+                'g-recaptcha-response.captcha' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
+            ]);
+        }
+
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {

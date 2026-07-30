@@ -102,6 +102,16 @@
             background-color: #f4b400;
             border-color: #f4b400;
         }
+        .g-recaptcha {
+            display: flex;
+            justify-content: center;
+            transform: scale(0.95);
+            transform-origin: center;
+        }
+        .g-recaptcha > * {
+            border-radius: 6px;
+            overflow: hidden;
+        }
     </style>
 </head>
 
@@ -248,15 +258,22 @@
 
                         </div>
 
-                        <button
-                            type="submit"
-                            class="btn btn-gold w-100">
+                        <div class="mb-3">
+                            {!! app('captcha')->display() !!}
+                            @error('g-recaptcha-response')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
 
-                            Masuk
+                         <button
+                             type="submit"
+                             class="btn btn-gold w-100">
 
-                        </button>
+                             Masuk
 
-                    </form>
+                         </button>
+
+                     </form>
 
                     <p class="text-center mt-4 small">
 
@@ -287,5 +304,6 @@
     </div>
 </div>
 
+    {!! app('captcha')->renderJs() !!}
 </body>
 </html>

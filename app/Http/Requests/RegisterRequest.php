@@ -26,6 +26,7 @@ class RegisterRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:admin,manager,staff,customer',
+            'g-recaptcha-response' => 'captcha',
         ];
     }
 
@@ -47,6 +48,8 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
             'role.required' => 'Role wajib diisi.',
             'role.in' => 'Role yang dipilih tidak valid.',
+            'g-recaptcha-response.required' => 'Verifikasi reCAPTCHA wajib diisi.',
+            'g-recaptcha-response.captcha' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
         ];
     }
 }

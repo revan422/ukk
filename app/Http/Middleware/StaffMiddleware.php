@@ -11,9 +11,25 @@ class StaffMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && in_array(Auth::user()->role, ['staff', 'admin'])) {
+        if (!Auth::check()) {
+            return redirect()->route('login')->withErrors(['access' => 'Silakan login terlebih dahulu.']);
+        }
+
+        $role = Auth::user()->role;
+
+        if (in_array($role, ['staff', 'admin'])) {
             return $next($request);
         }
-        return redirect()->route('dashboard')->withErrors(['access' => 'Anda tidak memiliki akses Staff.']);
+
+        // Redirect sesuai role
+        $routeMap = [
+            'admin' => 'admin.dashboard',
+            'manager' => 'manager.dashboard',
+            'customer' => 'dashboard',
+        ];
+
+        $redirectRoute = $routeMap[$role] ?? 'dashboard';
+
+        return redirect()->route($redirectRoute)->withErrors(['access' => 'Anda tidak memiliki akses Staff.']);
     }
 }

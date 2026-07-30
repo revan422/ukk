@@ -1,27 +1,20 @@
-# Authentication Fix Progress
+# Task Progress - reCAPTCHA & Email Verification
 
-## Analysis Complete - Issues Found:
+## Task Analysis
+- `anhskohbo/no-captcha` package is installed but NOT configured properly
+- `config/captcha.php` uses wrong key names (`nocaptcha_secret`/`nocaptcha_sitekey` instead of `secret`/`sitekey`)
+- Provider `NoCaptchaServiceProvider` is NOT registered in `bootstrap/providers.php`
+- `.env` already has Google test keys for reCAPTCHA
+- ReCAPTCHA widget is NOT displayed on register/login views
+- No reCAPTCHA validation in AuthController or RegisterRequest
+- Email verification is already implemented but needs reCAPTCHA on registration
 
-### AuthController.php:
-1. **Login method has DUPLICATE CODE** - Lines 135-177 are repeated twice (user check, email verification, password check)
-2. **Broken role redirect** - Syntax error: `} elseif` without preceding `if` block
-3. **Missing role redirects** - Only manager redirect exists, missing admin, staff, customer
-4. **Register redirects to login** - Should redirect to `verification.notice` instead
-5. **Login doesn't pass siteKey** - But blade template uses it (will be removed anyway)
-
-### login.blade.php:
-6. **Still has Google reCAPTCHA** - Widget and script still present
-7. **Uses $siteKey variable** - Not passed from controller
-
-### VerificationController.php:
-8. **Uses sha1() for hash check** - Should use Laravel's built-in EmailVerificationRequest
-9. **Login not-verified flow** - Shows error instead of redirecting to verify page
-
-## Fix Plan:
-- [x] Analyze all authentication files
-- [ ] Fix AuthController.php - login method (remove duplicates, fix redirects, remove captcha dependency)
-- [ ] Fix AuthController.php - register method (redirect to verification.notice)
-- [ ] Fix VerificationController.php - use Laravel's built-in verification
-- [ ] Fix login.blade.php - remove reCAPTCHA completely
-- [ ] Fix routes/web.php - ensure proper routes
-- [ ] Test and verify all flows
+## Steps
+- [x] Analyze project structure and existing code
+- [x] Fix `config/captcha.php` to use correct keys (`secret`/`sitekey`)
+- [x] Register `NoCaptchaServiceProvider` in `bootstrap/providers.php`
+- [ ] Add reCAPTCHA to register.blade.php (widget + JS)
+- [ ] Add reCAPTCHA to login.blade.php (widget + JS)
+- [ ] Add reCAPTCHA validation in AuthController::register()
+- [ ] Add reCAPTCHA validation in AuthController::login()
+- [ ] Test configuration

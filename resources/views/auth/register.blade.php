@@ -60,6 +60,16 @@
             font-size: 16px;
             margin-bottom: 20px;
         }
+        .g-recaptcha {
+            display: flex;
+            justify-content: center;
+            transform: scale(0.95);
+            transform-origin: center;
+        }
+        .g-recaptcha > * {
+            border-radius: 6px;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -132,6 +142,13 @@
                                 <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
                             </div>
 
+                            <div class="mb-3">
+                                {!! app('captcha')->display() !!}
+                                @error('g-recaptcha-response')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                              <button type="submit" class="btn btn-gold w-100" id="register-btn">Daftar Sekarang</button>
                          </form>
 
@@ -143,5 +160,6 @@
              </div>
          </div>
      </div>
+    {!! app('captcha')->renderJs() !!}
 </body>
 </html>
