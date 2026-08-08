@@ -673,7 +673,7 @@
                             <div class="row align-items-center">
                                 <div class="col-md-2 text-center">
                                     <div class="airline-logo">
-                                        {{ substr($flight->airline->code, 0, 2) }}
+                                       {{ $flight->airline ? substr($flight->airline->code, 0, 2) : 'XX' }}
                                     </div>
                                 </div>
                                 <div class="col-md-6">
