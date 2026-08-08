@@ -27,7 +27,7 @@ RUN apt-get update \
     libfreetype6-dev libicu-dev libjpeg62-turbo-dev libonig-dev libpng-dev libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd intl mbstring pdo_mysql zip \
-    && a2dismod mpm_event mpm_worker mpm_prefork \
+    && rm -f /etc/apache2/mods-enabled/mpm_* \
     && a2enmod mpm_prefork rewrite \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
@@ -38,8 +38,6 @@ COPY . .
 COPY --from=frontend /var/www/html/public/build ./public/build
 
 RUN chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R ug+rwx storage bootstrap/cache
+    && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 80
-
-CMD ["apache2-foreground"]
