@@ -684,7 +684,7 @@
                                         {{ $flight->departure_time->format('d M Y, H:i') }} WIB
                                     </div>
                                     <div class="flight-time">
-                                        <i class="fas fa-plane me-1"></i> {{ $flight->airline->name }}
+                                        <i class="fas fa-plane me-1"></i> {{ $flight->airline?->name ?? '-' }}
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-end">
