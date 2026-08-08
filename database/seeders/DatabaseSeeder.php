@@ -35,19 +35,19 @@ class DatabaseSeeder extends Seeder
 
         // 2. Seed Airports
         DB::table('airports')->insertOrIgnore([
-            ['name' => 'Soekarno-Hatta International Airport', 'code' => 'CGK', 'city' => 'Jakarta', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Ngurah Rai International Airport', 'code' => 'DPS', 'city' => 'Bali', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Juanda International Airport', 'code' => 'SUB', 'city' => 'Surabaya', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Kualanamu International Airport', 'code' => 'KNO', 'city' => 'Medan', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Yogyakarta International Airport', 'code' => 'YIA', 'city' => 'Yogyakarta', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 1, 'name' => 'Soekarno-Hatta International Airport', 'code' => 'CGK', 'city' => 'Jakarta', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 2, 'name' => 'Ngurah Rai International Airport', 'code' => 'DPS', 'city' => 'Bali', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 3, 'name' => 'Juanda International Airport', 'code' => 'SUB', 'city' => 'Surabaya', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 4, 'name' => 'Kualanamu International Airport', 'code' => 'KNO', 'city' => 'Medan', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 5, 'name' => 'Yogyakarta International Airport', 'code' => 'YIA', 'city' => 'Yogyakarta', 'country' => 'Indonesia', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // 3. Seed Airlines
         DB::table('airlines')->insertOrIgnore([
-            ['name' => 'Garuda Indonesia', 'code' => 'GA', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Lion Air', 'code' => 'JT', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'AirAsia Indonesia', 'code' => 'QZ', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Batik Air', 'code' => 'ID', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 1, 'name' => 'Garuda Indonesia', 'code' => 'GA', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 2, 'name' => 'Lion Air', 'code' => 'JT', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 3, 'name' => 'AirAsia Indonesia', 'code' => 'QZ', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 4, 'name' => 'Batik Air', 'code' => 'ID', 'logo' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // 4. Seed Destinations
@@ -76,24 +76,42 @@ class DatabaseSeeder extends Seeder
         // 6. Seed Flights
         DB::table('flights')->insertOrIgnore([
             [
+                'airline_id' => 1,
+                'departure_airport_id' => 1,
+                'arrival_airport_id' => 2,
                 'flight_number' => 'GA-101',
-                'departure_time' => now()->addDays(2),
+                'departure_time' => '2026-08-09 08:00:00',
+                'arrival_time' => '2026-08-09 10:30:00',
+                'flight_class' => 'economy',
+                'status' => 'scheduled',
                 'available_seats' => 45,
                 'price' => 850000.00,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
+                'airline_id' => 2,
+                'departure_airport_id' => 1,
+                'arrival_airport_id' => 2,
                 'flight_number' => 'JT-202',
-                'departure_time' => now()->addDays(3),
+                'departure_time' => '2026-08-09 13:00:00',
+                'arrival_time' => '2026-08-09 15:30:00',
+                'flight_class' => 'economy',
+                'status' => 'scheduled',
                 'available_seats' => 20,
                 'price' => 550000.00,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
+                'airline_id' => 3,
+                'departure_airport_id' => 2,
+                'arrival_airport_id' => 3,
                 'flight_number' => 'QZ-303',
-                'departure_time' => now()->addDays(5),
+                'departure_time' => '2026-08-10 09:00:00',
+                'arrival_time' => '2026-08-10 10:00:00',
+                'flight_class' => 'economy',
+                'status' => 'scheduled',
                 'available_seats' => 30,
                 'price' => 650000.00,
                 'created_at' => now(),
