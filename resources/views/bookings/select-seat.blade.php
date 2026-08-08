@@ -120,9 +120,9 @@
             color: #fff;
         }
         .seat.selected {
-            background: #007bff;
-            border-color: #007bff;
-            color: #fff;
+            background: #007bff !important;
+            border-color: #007bff !important;
+            color: #fff !important;
         }
         .seat.occupied {
             background: #ff477e;
@@ -181,17 +181,17 @@
         <div class="main-card">
             <div class="card-body p-4">
                 <h3 class="fw-bold mb-3" style="color: #0a192f;">Pilih Kursi Anda</h3>
-                <p class="text-muted mb-4">{{ $flight->airline->name }} - {{ $flight->flight_number }}</p>
+                <p class="text-muted mb-4">{{ $flight->airline->name ?? 'Maskapai' }} - {{ $flight->flight_number }}</p>
 
                 <!-- Flight Details -->
                 <div class="flight-info mb-4">
                     <div class="row">
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-2">Detail Penerbangan:</h6>
-                            <p class="mb-1"><strong>Dari:</strong> {{ $flight->departureAirport->name }} ({{ $flight->departureAirport->code }})</p>
-                            <p class="mb-1"><strong>Ke:</strong> {{ $flight->arrivalAirport->name }} ({{ $flight->arrivalAirport->code }})</p>
-                            <p class="mb-1"><strong>Tanggal:</strong> {{ $flight->departure_time->format('d M Y') }}</p>
-                            <p class="mb-0"><strong>Waktu:</strong> {{ $flight->departure_time->format('H:i') }} - {{ $flight->arrival_time->format('H:i') }}</p>
+                            <p class="mb-1"><strong>Dari:</strong> {{ $flight->departureAirport->name ?? '-' }} ({{ $flight->departureAirport->code ?? '-' }})</p>
+                            <p class="mb-1"><strong>Ke:</strong> {{ $flight->arrivalAirport->name ?? '-' }} ({{ $flight->arrivalAirport->code ?? '-' }})</p>
+                            <p class="mb-1"><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($flight->departure_time)->format('d M Y') }}</p>
+                            <p class="mb-0"><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($flight->departure_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($flight->arrival_time)->format('H:i') }}</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-2">Keterangan Kursi:</h6>
@@ -231,7 +231,7 @@
 
                     <!-- Seats Grid -->
                     @php
-                        $rows = range(1, 12); // Rows 1-12
+                        $rows = range(1, 12);
                         $columns = ['A', 'B', 'C', 'D', 'E', 'F'];
                         $selectedSeat = session('selected_seat');
                     @endphp
@@ -243,29 +243,33 @@
                                 @php
                                     $seatNumber = $row . $column;
                                     $seat = $seats->firstWhere('seat_number', $seatNumber);
-                                    $isOccupied = $seat && $seat->status === 'booked';
-                                    $isSelected = $selectedSeat == $seatNumber;
+                                    
+                                    // Cek ketersediaan
+                                    $isOccupied = false;
+                                    if ($seat) {
+                                        $isOccupied = ($seat->status === 'booked' || (isset($seat->is_available) && !$seat->is_available));
+                                    } else {
+                                        $isOccupied = true;
+                                    }
+                                    
+                                    $isSelected = ($selectedSeat == $seatNumber);
                                     $seatClass = $isOccupied ? 'occupied' : ($isSelected ? 'selected' : 'available');
+                                    $seatPrice = $seat->price ?? $flight->price ?? 0;
+                                    $seatId = $seat->id ?? 0;
                                 @endphp
 
                                 @if($index == 3)
                                     <div class="seat-gap"></div>
                                 @endif
 
-                                @if($seat)
-                                    <div class="seat {{ $seatClass }}"
-                                         data-seat="{{ $seatNumber }}"
-                                         data-seat-id="{{ $seat->id }}"
-                                         data-price="{{ $seat->price }}"
-                                         onclick="selectSeat(this, '{{ $seatNumber }}', {{ $seat->id }}, {{ $seat->price }})"
-                                         style="{{ $isOccupied ? 'cursor: not-allowed;' : '' }}">
-                                        {{ $seatNumber }}
-                                    </div>
-                                @else
-                                    <div class="seat occupied" style="cursor: not-allowed;">
-                                        {{ $seatNumber }}
-                                    </div>
-                                @endif
+                                <div class="seat {{ $seatClass }}"
+                                     data-seat="{{ $seatNumber }}"
+                                     data-seat-id="{{ $seatId }}"
+                                     data-price="{{ $seatPrice }}"
+                                     onclick="selectSeat(this, '{{ $seatNumber }}', {{ $seatId }}, {{ $seatPrice }})"
+                                     style="{{ $isOccupied ? 'cursor: not-allowed;' : '' }}">
+                                    {{ $seatNumber }}
+                                </div>
                             @endforeach
                         </div>
                     @endforeach
@@ -291,18 +295,13 @@
     </div>
 
     <script>
-        let currentSeat = null;
-        let currentSeatId = null;
-        let currentPrice = null;
-
         function selectSeat(element, seatNumber, seatId, price) {
-            // Check if seat is occupied
             if (element.classList.contains('occupied')) {
                 alert('Kursi sudah terisi. Silakan pilih kursi lain.');
                 return;
             }
 
-            // Remove selected class from all seats
+            // Reset semua kursi yang tidak occupied
             document.querySelectorAll('.seat').forEach(seat => {
                 seat.classList.remove('selected');
                 if (!seat.classList.contains('occupied')) {
@@ -310,44 +309,32 @@
                 }
             });
 
-            // Add selected class to clicked seat
+            // Tandai kursi yang dipilih
             element.classList.remove('available');
             element.classList.add('selected');
 
-            // Update current selection
-            currentSeat = seatNumber;
-            currentSeatId = seatId;
-            currentPrice = price;
-
-            // Update info display
+            // Update informasi teks
+            const parsedPrice = price ? Number(price) : 0;
             document.getElementById('selectedSeatNumber').textContent = seatNumber;
-            document.getElementById('selectedSeatPrice').textContent = price.toLocaleString('id-ID');
+            document.getElementById('selectedSeatPrice').textContent = parsedPrice.toLocaleString('id-ID');
             document.getElementById('selectedSeatInfo').style.display = 'block';
 
-            // Update form input
+            // Set ID kursi ke form
             document.getElementById('seatIdInput').value = seatId;
 
-            // Enable submit button
-            document.getElementById('submitBtn').disabled = false;
+            // Aktifkan tombol Lanjutkan
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.removeAttribute('disabled');
         }
 
-        // If there's a selected seat from session, select it on load
         @if($selectedSeat)
-            @php
-                $seatElement = null;
-                foreach($rows as $row) {
-                    foreach($columns as $column) {
-                        if ($row . $column == $selectedSeat) {
-                            $seatElement = document.querySelector('[data-seat="' . $selectedSeat . '"]');
-                            break;
-                        }
-                    }
+            document.addEventListener('DOMContentLoaded', function() {
+                const targetSeat = document.querySelector('[data-seat="{{ $selectedSeat }}"]');
+                if (targetSeat) {
+                    targetSeat.click();
                 }
-            @endphp
-            if (document.querySelector('[data-seat="{{ $selectedSeat }}"]')) {
-                const seatEl = document.querySelector('[data-seat="{{ $selectedSeat }}"]');
-                selectSeat(seatEl, '{{ $selectedSeat }}', {{ $selectedSeatId ?? 0 }}, {{ $selectedSeatPrice ?? 0 }});
-            }
+            });
         @endif
     </script>
 </body>
