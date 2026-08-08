@@ -678,7 +678,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="flight-route">
-                                        {{ $flight->departureAirport->code }} → {{ $flight->arrivalAirport->code }}
+                                        {{ $flight->departureAirport?->code ?? '-' }} → {{ $flight->arrivalAirport?->code ?? '-' }}
                                     </div>
                                     <div class="flight-time">
                                         {{ $flight->departure_time->format('d M Y, H:i') }} WIB
