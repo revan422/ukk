@@ -2,9 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,11 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Daftarkan listener untuk event Registered
-        // agar email verifikasi otomatis terkirim setelah register
-        \Illuminate\Support\Facades\Event::listen(
-            Registered::class,
-            SendEmailVerificationNotification::class
-        );
+        // Paksa semua URL dan Form Action menggunakan HTTPS di server
+        if (app()->environment('production') || request()->header('X-Forwarded-Proto') === 'https') {
+            URL::forceScheme('https');
+        }
     }
 }
