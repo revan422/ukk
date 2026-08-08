@@ -27,7 +27,8 @@ RUN apt-get update \
         libfreetype6-dev libicu-dev libjpeg62-turbo-dev libonig-dev libpng-dev libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd intl mbstring pdo_mysql zip \
-    && a2enmod rewrite \
+    && a2dismod mpm_event mpm_worker mpm_auto \
+    && a2enmod mpm_prefork rewrite \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
     && rm -rf /var/lib/apt/lists/*
