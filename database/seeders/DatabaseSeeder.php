@@ -76,6 +76,7 @@ class DatabaseSeeder extends Seeder
         // 6. Seed Flights
         DB::table('flights')->insertOrIgnore([
             [
+                'id' => 1,
                 'airline_id' => 1,
                 'departure_airport_id' => 1,
                 'arrival_airport_id' => 2,
@@ -90,6 +91,7 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'id' => 2,
                 'airline_id' => 2,
                 'departure_airport_id' => 1,
                 'arrival_airport_id' => 2,
@@ -104,6 +106,7 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'id' => 3,
                 'airline_id' => 3,
                 'departure_airport_id' => 2,
                 'arrival_airport_id' => 3,
@@ -118,5 +121,27 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
         ]);
+
+        // 7. Seed Seats
+        $seats = [];
+        $rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+        foreach ([1, 2, 3] as $flightId) {
+            for ($i = 1; $i <= 5; $i++) {
+                foreach ($rows as $row) {
+                    $seats[] = [
+                        'flight_id' => $flightId,
+                        'seat_number' => $i . $row,
+                        'class' => 'economy',
+                        'is_available' => true,
+                        'price' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+        }
+
+        DB::table('seats')->insertOrIgnore($seats);
     }
 }
