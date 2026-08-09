@@ -263,7 +263,7 @@
                                     $seatNumber = $row . $column;
                                     $seat = isset($seats) ? $seats->firstWhere('seat_number', $seatNumber) : null;
                                     
-                                    // Cek ketersediaan (jika $seat belum ada di DB, anggap tersedia)
+                                    // Cek ketersediaan
                                     if ($seat) {
                                         $isOccupied = ($seat->status === 'booked' || (isset($seat->is_available) && !$seat->is_available));
                                     } else {
@@ -305,6 +305,7 @@
                     <input type="hidden" name="flight_id" value="{{ $flight->id }}">
                     <input type="hidden" name="seat_id" id="seatIdInput" value="">
                     <input type="hidden" name="seat_number" id="seatNumberInput" value="">
+                    <input type="hidden" name="price" id="priceInput" value="">
                     <button type="submit" class="btn btn-submit" id="submitBtn" disabled>
                         Lanjutkan
                     </button>
@@ -338,9 +339,10 @@
             document.getElementById('selectedSeatPrice').textContent = parsedPrice.toLocaleString('id-ID');
             document.getElementById('selectedSeatInfo').style.display = 'block';
 
-            // Set ID dan Nomor kursi ke form
+            // Set ID, Nomor, dan Price ke form
             document.getElementById('seatIdInput').value = seatId;
             document.getElementById('seatNumberInput').value = seatNumber;
+            document.getElementById('priceInput').value = parsedPrice;
 
             // Aktifkan tombol Lanjutkan
             const submitBtn = document.getElementById('submitBtn');
