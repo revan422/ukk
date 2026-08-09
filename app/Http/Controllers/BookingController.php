@@ -41,24 +41,37 @@ class BookingController extends Controller
     {
         $request->validate([
             'flight_id' => 'required|exists:flights,id',
-            'seat_id' => 'required|exists:seats,id',
+            'seat_id'   => 'required|exists:seats,id',
+        ], [
+            'seat_id.required' => 'Silakan pilih salah satu kursi terlebih dahulu.',
+            'seat_id.exists'   => 'Kursi tidak ditemukan.',
         ]);
 
-        $seat = Seat::findOrFail($request->seat_id);
+        $seat = Seat::with('flight')->findOrFail($request->seat_id);
 
-        // Cek apakah kursi masih tersedia
-        if ($seat->status !== 'available') {
+        // Cek apakah kursi terisi (fleksibel untuk status string maupun boolean is_available)
+        $isOccupied = false;
+        if (isset($seat->status) && $seat->status === 'booked') {
+            $isOccupied = true;
+        } elseif (isset($seat->is_available) && !$seat->is_available) {
+            $isOccupied = true;
+        }
+
+        if ($isOccupied) {
             return back()->withErrors(['seat' => 'Kursi yang Anda pilih sudah dipesan. Silakan pilih kursi lain.']);
         }
+
+        // Tentukan harga tiket (ambil harga kursi, jika tidak ada pakai harga penerbangan)
+        $seatPrice = $seat->price ?? $seat->flight->price ?? 0;
 
         // Simpan di session untuk langkah berikutnya
         session([
             'booking_data' => [
-                'flight_id' => $request->flight_id,
-                'seat_id' => $request->seat_id,
+                'flight_id'   => $request->flight_id,
+                'seat_id'     => $request->seat_id,
                 'seat_number' => $seat->seat_number,
-                'price' => $seat->price ?? $seat->flight->price,
-                'seat_class' => $seat->seat_class,
+                'price'       => $seatPrice,
+                'seat_class'  => $seat->class ?? $seat->seat_class ?? 'economy',
             ]
         ]);
 
@@ -82,25 +95,25 @@ class BookingController extends Controller
     public function processPassenger(Request $request)
     {
         $rules = [
-            'full_name' => 'required|string|max:255',
-            'date_of_birth' => 'required|date|before:today',
+            'full_name'      => 'required|string|max:255',
+            'date_of_birth'  => 'required|date|before:today',
             'id_card_number' => 'required|string|min:10|max:30',
-            'gender' => 'required|in:male,female',
+            'gender'         => 'required|in:male,female',
         ];
 
         $request->validate($rules);
 
         $bookingData = session('booking_data');
         $bookingData['passenger'] = [
-            'full_name' => $request->full_name,
-            'date_of_birth' => $request->date_of_birth,
+            'full_name'      => $request->full_name,
+            'date_of_birth'  => $request->date_of_birth,
             'id_card_number' => $request->id_card_number,
-            'gender' => $request->gender,
+            'gender'         => $request->gender,
         ];
 
         $bookingData['shipping'] = [
             'required' => false,
-            'cost' => 0,
+            'cost'     => 0,
         ];
 
         session(['booking_data' => $bookingData]);
@@ -136,7 +149,6 @@ class BookingController extends Controller
     {
         // Cek apakah user sudah login
         if (!Auth::check()) {
-            // Simpan booking data di session dan redirect ke login
             return redirect()->route('login')
                 ->with('info', 'Silakan login terlebih dahulu untuk melanjutkan pembayaran.')
                 ->with('redirect_after_login', route('bookings.confirmation'));
@@ -162,39 +174,44 @@ class BookingController extends Controller
 
         // Create passenger
         $passenger = Passenger::create([
-            'user_id' => Auth::id(),
-            'full_name' => $passengerData['full_name'],
-            'date_of_birth' => $passengerData['date_of_birth'],
+            'user_id'        => Auth::id(),
+            'full_name'      => $passengerData['full_name'],
+            'date_of_birth'  => $passengerData['date_of_birth'],
             'id_card_number' => $passengerData['id_card_number'],
-            'gender' => $passengerData['gender'],
+            'gender'         => $passengerData['gender'],
         ]);
 
         $totalPrice = $bookingData['price'];
 
         // Create booking with UNPAID status
         $booking = Booking::create([
-            'user_id' => Auth::id(),
-            'flight_id' => $bookingData['flight_id'],
-            'passenger_id' => $passenger->id,
-            'booking_code' => strtoupper(Str::random(8)),
+            'user_id'          => Auth::id(),
+            'flight_id'        => $bookingData['flight_id'],
+            'passenger_id'     => $passenger->id,
+            'booking_code'     => strtoupper(Str::random(8)),
             'total_passengers' => 1,
-            'total_price' => $totalPrice,
-            'seat_number' => $bookingData['seat_number'],
-            'status' => 'UNPAID',
+            'total_price'      => $totalPrice,
+            'seat_number'      => $bookingData['seat_number'],
+            'status'           => 'UNPAID',
         ]);
 
         // Create payment record
         Payment::create([
-            'booking_id' => $booking->id,
+            'booking_id'     => $booking->id,
             'payment_method' => 'midtrans_snap',
-            'amount' => $totalPrice,
+            'amount'         => $totalPrice,
             'payment_status' => 'PENDING',
             'transaction_id' => 'BOOKING-' . $booking->id . '-' . now()->timestamp,
         ]);
 
         // Lock seat immediately to avoid double booking
         $seat = Seat::findOrFail($bookingData['seat_id']);
-        $seat->update(['status' => 'booked']);
+        if (isset($seat->status)) {
+            $seat->update(['status' => 'booked']);
+        }
+        if (isset($seat->is_available)) {
+            $seat->update(['is_available' => false]);
+        }
 
         $flight = Flight::findOrFail($bookingData['flight_id']);
         $flight->update(['available_seats' => max(0, $flight->available_seats - 1)]);
@@ -218,7 +235,6 @@ class BookingController extends Controller
             'user'
         ])->findOrFail($bookingId);
 
-        // Ensure booking belongs to authenticated user
         if ($booking->user_id !== Auth::id()) {
             abort(403, 'Unauthorized');
         }
