@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // PERBAIKAN: Mempercayai proxy Railway agar HTTPS terdeteksi
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'manager' => \App\Http\Middleware\ManagerMiddleware::class,
