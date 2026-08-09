@@ -13,9 +13,74 @@ use Midtrans\Snap;
 
 class BookingController extends Controller
 {
-    /**
-     * 1. Membuat Data Booking & Passenger dari Session, lalu Redirect ke Halaman Detail
-     */
+    // 1. Pilih Kursi
+    public function selectSeat($flightId)
+    {
+        $flight = Flight::findOrFail($flightId);
+        return view('bookings.select_seat', compact('flight'));
+    }
+
+    public function processSeat(Request $request)
+    {
+        $request->validate([
+            'flight_id'   => 'required|exists:flights,id',
+            'seat_number' => 'required|string',
+            'price'       => 'required|numeric',
+        ]);
+
+        session(['booking_data' => array_merge(session('booking_data', []), [
+            'flight_id'   => $request->flight_id,
+            'seat_number' => $request->seat_number,
+            'price'       => $request->price,
+        ])]);
+
+        return redirect()->route('bookings.passenger');
+    }
+
+    // 2. Form Data Penumpang
+    public function passengerForm()
+    {
+        if (!session('booking_data')) {
+            return redirect()->route('flights.index')->with('error', 'Sesi telah kadaluarsa.');
+        }
+
+        return view('bookings.passenger');
+    }
+
+    public function processPassenger(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'gender'    => 'required|in:male,female',
+        ]);
+
+        $bookingData = session('booking_data', []);
+        $bookingData['passenger'] = [
+            'full_name' => $request->full_name,
+            'gender'    => $request->gender,
+        ];
+
+        session(['booking_data' => $bookingData]);
+
+        return redirect()->route('bookings.confirmation');
+    }
+
+    // 3. Konfirmasi Booking (METHOD YANG TERLEWAT)
+    public function confirmation()
+    {
+        $bookingData = session('booking_data');
+
+        if (!$bookingData) {
+            return redirect()->route('flights.index')->with('error', 'Sesi pemesanan telah kadaluarsa.');
+        }
+
+        $flight = Flight::with(['airline', 'departureAirport', 'arrivalAirport'])
+            ->findOrFail($bookingData['flight_id']);
+
+        return view('bookings.confirmation', compact('bookingData', 'flight'));
+    }
+
+    // 4. Simpan Booking ke DB & Redirect ke Halaman Detail
     public function processBooking(Request $request)
     {
         $bookingData = session('booking_data');
@@ -26,7 +91,6 @@ class BookingController extends Controller
 
         $flight = Flight::findOrFail($bookingData['flight_id']);
         
-        // Simpan Booking
         $bookingCode = 'TRX-' . strtoupper(Str::random(8));
         $booking = Booking::create([
             'user_id'          => auth()->id(),
@@ -37,25 +101,19 @@ class BookingController extends Controller
             'status'           => 'pending',
         ]);
 
-        // Simpan Passenger
         Passenger::create([
             'booking_id'  => $booking->id,
             'full_name'   => $bookingData['passenger']['full_name'],
             'gender'      => $bookingData['passenger']['gender'] ?? 'male',
-            'seat_number' => $bookingData['seat_number'] ?? $bookingData['seat_id'] ?? '1A',
+            'seat_number' => $bookingData['seat_number'] ?? '1A',
         ]);
 
-        // Hapus session booking sementara
         session()->forget('booking_data');
 
-        // Redirect ke detail booking
         return redirect()->route('bookings.show', $booking->id);
     }
 
-    /**
-     * 2. Endpoint AJAX untuk route('payment.create')
-     * Menggenerasi Snap Token Midtrans berdasarkan booking_id
-     */
+    // 5. AJAX Request Midtrans Token (Dipanggil di show.blade.php)
     public function createPaymentToken(Request $request)
     {
         $request->validate([
@@ -64,7 +122,6 @@ class BookingController extends Controller
 
         $booking = Booking::with(['passenger', 'user'])->findOrFail($request->booking_id);
 
-        // Konfigurasi Midtrans
         Config::$serverKey = config('services.midtrans.server_key');
         Config::$isProduction = config('services.midtrans.is_production', false);
         Config::$isSanitized = true;
@@ -84,7 +141,6 @@ class BookingController extends Controller
         try {
             $snapToken = Snap::getSnapToken($params);
 
-            // Buat / Perbarui Record Pembayaran
             Payment::updateOrCreate(
                 ['booking_id' => $booking->id],
                 [
@@ -95,7 +151,6 @@ class BookingController extends Controller
                 ]
             );
 
-            // Kembalikan Response JSON untuk JavaScript di show.blade.php
             return response()->json(['snap_token' => $snapToken]);
 
         } catch (\Exception $e) {
@@ -103,9 +158,7 @@ class BookingController extends Controller
         }
     }
 
-    /**
-     * 3. Menampilkan Halaman Detail Booking
-     */
+    // 6. Detail Booking
     public function show($id)
     {
         $booking = Booking::with([
@@ -119,5 +172,26 @@ class BookingController extends Controller
         ->findOrFail($id);
 
         return view('bookings.show', compact('booking'));
+    }
+
+    // 7. Riwayat Booking User
+    public function history()
+    {
+        $bookings = Booking::with(['flight.airline', 'payment'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(10);
+
+        return view('bookings.history', compact('bookings'));
+    }
+
+    // 8. Halaman Sukses
+    public function success($id)
+    {
+        $booking = Booking::with(['flight.airline', 'passenger', 'payment'])
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        return view('bookings.success', compact('booking'));
     }
 }
