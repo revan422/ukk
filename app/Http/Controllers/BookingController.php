@@ -8,8 +8,7 @@ use App\Models\Passenger;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Midtrans\Config;
-use Midtrans\Snap;
+use Illuminate\Support\Facades\Http;
 
 class BookingController extends Controller
 {
@@ -65,7 +64,7 @@ class BookingController extends Controller
         return redirect()->route('bookings.confirmation');
     }
 
-    // 3. Konfirmasi Booking (METHOD YANG TERLEWAT)
+    // 3. Konfirmasi Booking
     public function confirmation()
     {
         $bookingData = session('booking_data');
@@ -113,7 +112,7 @@ class BookingController extends Controller
         return redirect()->route('bookings.show', $booking->id);
     }
 
-    // 5. AJAX Request Midtrans Token (Dipanggil di show.blade.php)
+    // 5. AJAX Request Midtrans Token (Menggunakan HTTP Client Bawaan Laravel)
     public function createPaymentToken(Request $request)
     {
         $request->validate([
@@ -122,10 +121,13 @@ class BookingController extends Controller
 
         $booking = Booking::with(['passenger', 'user'])->findOrFail($request->booking_id);
 
-        Config::$serverKey = config('services.midtrans.server_key');
-        Config::$isProduction = config('services.midtrans.is_production', false);
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
+        $serverKey = config('services.midtrans.server_key');
+        $isProduction = config('services.midtrans.is_production', false);
+
+        // Tentukan URL Sandbox atau Production
+        $midtransUrl = $isProduction 
+            ? 'https://app.midtrans.com/snap/v1/transactions' 
+            : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
         $params = [
             'transaction_details' => [
@@ -139,7 +141,25 @@ class BookingController extends Controller
         ];
 
         try {
-            $snapToken = Snap::getSnapToken($params);
+            // Request ke API Midtrans tanpa composer package
+            $response = Http::withBasicAuth($serverKey, '')
+                ->withHeaders([
+                    'Accept'       => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($midtransUrl, $params);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'error' => 'Gagal dari Midtrans: ' . ($response->json('error_messages.0') ?? $response->body())
+                ], 500);
+            }
+
+            $snapToken = $response->json('token');
+
+            if (!$snapToken) {
+                return response()->json(['error' => 'Token transaksi tidak ditemukan.'], 500);
+            }
 
             Payment::updateOrCreate(
                 ['booking_id' => $booking->id],
