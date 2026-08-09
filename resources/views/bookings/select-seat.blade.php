@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pilih Kursi - SkyLine Airlines</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -181,22 +182,24 @@
         <div class="main-card">
             <div class="card-body p-4">
                 <h3 class="fw-bold mb-3" style="color: #0a192f;">Pilih Kursi Anda</h3>
+                
                 <!-- Tampilkan Pesan Error/Gagal jika Ada -->
-@if(session('error'))
-    <div class="alert alert-danger mb-3">
-        {{ session('error') }}
-    </div>
-@endif
+                @if(session('error'))
+                    <div class="alert alert-danger mb-3">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
-@if($errors->any())
-    <div class="alert alert-danger mb-3">
-        <ul class="mb-0">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                @if($errors->any())
+                    <div class="alert alert-danger mb-3">
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <p class="text-muted mb-4">{{ $flight->airline->name ?? 'Maskapai' }} - {{ $flight->flight_number }}</p>
 
                 <!-- Flight Details -->
@@ -258,14 +261,13 @@
                             @foreach($columns as $index => $column)
                                 @php
                                     $seatNumber = $row . $column;
-                                    $seat = $seats->firstWhere('seat_number', $seatNumber);
+                                    $seat = isset($seats) ? $seats->firstWhere('seat_number', $seatNumber) : null;
                                     
-                                    // Cek ketersediaan
-                                    $isOccupied = false;
+                                    // Cek ketersediaan (jika $seat belum ada di DB, anggap tersedia)
                                     if ($seat) {
                                         $isOccupied = ($seat->status === 'booked' || (isset($seat->is_available) && !$seat->is_available));
                                     } else {
-                                        $isOccupied = true;
+                                        $isOccupied = false; 
                                     }
                                     
                                     $isSelected = ($selectedSeat == $seatNumber);
@@ -302,6 +304,7 @@
                     @csrf
                     <input type="hidden" name="flight_id" value="{{ $flight->id }}">
                     <input type="hidden" name="seat_id" id="seatIdInput" value="">
+                    <input type="hidden" name="seat_number" id="seatNumberInput" value="">
                     <button type="submit" class="btn btn-submit" id="submitBtn" disabled>
                         Lanjutkan
                     </button>
@@ -335,8 +338,9 @@
             document.getElementById('selectedSeatPrice').textContent = parsedPrice.toLocaleString('id-ID');
             document.getElementById('selectedSeatInfo').style.display = 'block';
 
-            // Set ID kursi ke form
+            // Set ID dan Nomor kursi ke form
             document.getElementById('seatIdInput').value = seatId;
+            document.getElementById('seatNumberInput').value = seatNumber;
 
             // Aktifkan tombol Lanjutkan
             const submitBtn = document.getElementById('submitBtn');
