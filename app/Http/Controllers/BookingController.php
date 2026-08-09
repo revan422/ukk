@@ -64,7 +64,7 @@ class BookingController extends Controller
         return redirect()->route('bookings.confirmation');
     }
 
-    // 3. Konfirmasi Booking
+    // 3. Konfirmasi Booking (Mengirimkan $seat agar tidak Undefined)
     public function confirmation()
     {
         $bookingData = session('booking_data');
@@ -76,7 +76,10 @@ class BookingController extends Controller
         $flight = Flight::with(['airline', 'departureAirport', 'arrivalAirport'])
             ->findOrFail($bookingData['flight_id']);
 
-        return view('bookings.confirmation', compact('bookingData', 'flight'));
+        // Mengirim $seat untuk dikonsumsi halaman Blade
+        $seat = $bookingData['seat_number'] ?? '-';
+
+        return view('bookings.confirmation', compact('bookingData', 'flight', 'seat'));
     }
 
     // 4. Simpan Booking ke DB & Redirect ke Halaman Detail
@@ -112,7 +115,7 @@ class BookingController extends Controller
         return redirect()->route('bookings.show', $booking->id);
     }
 
-    // 5. AJAX Request Midtrans Token (Menggunakan HTTP Client Bawaan Laravel)
+    // 5. AJAX Request Midtrans Token
     public function createPaymentToken(Request $request)
     {
         $request->validate([
@@ -121,10 +124,9 @@ class BookingController extends Controller
 
         $booking = Booking::with(['passenger', 'user'])->findOrFail($request->booking_id);
 
-        $serverKey = config('services.midtrans.server_key');
-        $isProduction = config('services.midtrans.is_production', false);
+        $serverKey = config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY'));
+        $isProduction = config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION', false));
 
-        // Tentukan URL Sandbox atau Production
         $midtransUrl = $isProduction 
             ? 'https://app.midtrans.com/snap/v1/transactions' 
             : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
@@ -141,7 +143,6 @@ class BookingController extends Controller
         ];
 
         try {
-            // Request ke API Midtrans tanpa composer package
             $response = Http::withBasicAuth($serverKey, '')
                 ->withHeaders([
                     'Accept'       => 'application/json',
@@ -156,10 +157,6 @@ class BookingController extends Controller
             }
 
             $snapToken = $response->json('token');
-
-            if (!$snapToken) {
-                return response()->json(['error' => 'Token transaksi tidak ditemukan.'], 500);
-            }
 
             Payment::updateOrCreate(
                 ['booking_id' => $booking->id],
