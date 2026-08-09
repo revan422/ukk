@@ -1,8 +1,15 @@
+@php
+    // Fallback aman jika data tidak dikirim dari Controller
+    $flight = $flight ?? session('flight');
+    $bookingData = $bookingData ?? session('booking_data', ['seat_number' => '-', 'price' => 0]);
+@endphp
+
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Penumpang - SkyLine Airlines</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -100,22 +107,6 @@
         .gender-option label:hover {
             border-color: #f4b400;
         }
-
-        .shipping-result-item {
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 3px solid transparent;
-        }
-
-        .shipping-result-item:hover {
-            background-color: #f8f9fa;
-            border-left-color: #f4b400;
-        }
-
-        .shipping-result-item.selected {
-            background-color: #fff3cd;
-            border-left-color: #f4b400;
-        }
     </style>
 </head>
 
@@ -133,16 +124,22 @@
                     <div class="card-body p-4">
                         <h3 class="fw-bold mb-4" style="color: #0a192f;">Isi Data Penumpang</h3>
 
-                        <!-- Info Penerbangan -->
-                        <div class="flight-info mb-4">
-                            <h6 class="fw-bold mb-2">Detail Penerbangan:</h6>
-                            <p class="mb-1"><strong>{{ $flight->airline->name }}</strong> -
-                                {{ $flight->flight_number }}</p>
-                            <p class="mb-1">{{ $flight->departureAirport->name }} →
-                                {{ $flight->arrivalAirport->name }}</p>
-                            <p class="mb-0">Kursi: <strong>{{ $bookingData['seat_number'] }}</strong> | Harga:
-                                <strong>Rp {{ number_format($bookingData['price'], 0, ',', '.') }}</strong></p>
-                        </div>
+                        <!-- Info Penerbangan (Aman dari Crash) -->
+                        @if($flight)
+                            <div class="flight-info mb-4">
+                                <h6 class="fw-bold mb-2">Detail Penerbangan:</h6>
+                                <p class="mb-1"><strong>{{ $flight->airline->name ?? 'Maskapai' }}</strong> - {{ $flight->flight_number ?? '-' }}</p>
+                                <p class="mb-1">{{ $flight->departureAirport->name ?? '-' }} → {{ $flight->arrivalAirport->name ?? '-' }}</p>
+                                <p class="mb-0">
+                                    Kursi: <strong>{{ $bookingData['seat_number'] ?? '-' }}</strong> | 
+                                    Harga: <strong>Rp {{ number_format($bookingData['price'] ?? 0, 0, ',', '.') }}</strong>
+                                </p>
+                            </div>
+                        @else
+                            <div class="alert alert-warning mb-4">
+                                Data penerbangan tidak ditemukan. Silakan pilih penerbangan kembali.
+                            </div>
+                        @endif
 
                         @if ($errors->any())
                             <div class="alert alert-danger">
@@ -156,6 +153,13 @@
 
                         <form action="{{ route('bookings.processPassenger') }}" method="POST">
                             @csrf
+
+                            <!-- Hidden inputs agar data flight & kursi ikut terkirim -->
+                            @if($flight)
+                                <input type="hidden" name="flight_id" value="{{ $flight->id }}">
+                            @endif
+                            <input type="hidden" name="seat_number" value="{{ $bookingData['seat_number'] ?? '' }}">
+                            <input type="hidden" name="price" value="{{ $bookingData['price'] ?? 0 }}">
 
                             <!-- Nama Lengkap -->
                             <div class="mb-3">
@@ -177,8 +181,7 @@
                             <div class="mb-3">
                                 <label class="form-label">No. NIK / Paspor <span class="text-danger">*</span></label>
                                 <input type="text" name="id_card_number" class="form-control"
-                                    value="{{ old('id_card_number') }}" placeholder="Masukkan NIK atau Nomor Paspor"
-                                    required>
+                                    value="{{ old('id_card_number') }}" placeholder="Masukkan NIK atau Nomor Paspor" required>
                                 <small class="text-muted">Minimal 10 karakter</small>
                             </div>
 
@@ -199,17 +202,14 @@
                                 </div>
                             </div>
 
-                            <!-- RajaOngkir shipping removed -->
-
-                            <button type="submit" class="btn btn-gold w-100">Lanjutkan ke Pembayaran</button>
+                            <button type="submit" class="btn btn-gold w-100" {{ !$flight ? 'disabled' : '' }}>
+                                Lanjutkan ke Pembayaran
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- RajaOngkir JavaScript removed -->
 </body>
-
 </html>
