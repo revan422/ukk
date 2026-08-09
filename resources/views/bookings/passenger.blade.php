@@ -124,8 +124,8 @@
                     <div class="card-body p-4">
                         <h3 class="fw-bold mb-4" style="color: #0a192f;">Isi Data Penumpang</h3>
 
-                        <!-- Info Penerbangan (Aman dari Crash) -->
                         @if($flight)
+                            <!-- Info Penerbangan -->
                             <div class="flight-info mb-4">
                                 <h6 class="fw-bold mb-2">Detail Penerbangan:</h6>
                                 <p class="mb-1"><strong>{{ $flight->airline->name ?? 'Maskapai' }}</strong> - {{ $flight->flight_number ?? '-' }}</p>
@@ -135,77 +135,80 @@
                                     Harga: <strong>Rp {{ number_format($bookingData['price'] ?? 0, 0, ',', '.') }}</strong>
                                 </p>
                             </div>
+
+                            @if ($errors->any())
+                                <div class="alert alert-danger mb-4">
+                                    <ul class="mb-0">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            <form action="{{ route('bookings.processPassenger') }}" method="POST">
+                                @csrf
+
+                                <!-- Hidden inputs -->
+                                <input type="hidden" name="flight_id" value="{{ $flight->id }}">
+                                <input type="hidden" name="seat_number" value="{{ $bookingData['seat_number'] ?? '' }}">
+                                <input type="hidden" name="price" value="{{ $bookingData['price'] ?? 0 }}">
+
+                                <!-- Nama Lengkap -->
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                                    <input type="text" name="full_name" class="form-control"
+                                        value="{{ old('full_name') }}" placeholder="Sesuai KTP/Paspor" required>
+                                    <small class="text-muted">Masukkan nama lengkap sesuai identitas</small>
+                                </div>
+
+                                <!-- Tanggal Lahir -->
+                                <div class="mb-3">
+                                    <label class="form-label">Tanggal Lahir <span class="text-danger">*</span></label>
+                                    <input type="date" name="date_of_birth" class="form-control"
+                                        value="{{ old('date_of_birth') }}" required>
+                                    <small class="text-muted">Format: YYYY-MM-DD</small>
+                                </div>
+
+                                <!-- No NIK / Paspor -->
+                                <div class="mb-3">
+                                    <label class="form-label">No. NIK / Paspor <span class="text-danger">*</span></label>
+                                    <input type="text" name="id_card_number" class="form-control"
+                                        value="{{ old('id_card_number') }}" placeholder="Masukkan NIK atau Nomor Paspor" required>
+                                    <small class="text-muted">Minimal 10 karakter</small>
+                                </div>
+
+                                <!-- Jenis Kelamin -->
+                                <div class="mb-4">
+                                    <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
+                                    <div class="gender-options">
+                                        <div class="gender-option">
+                                            <input type="radio" name="gender" id="male" value="male"
+                                                {{ old('gender') == 'male' ? 'checked' : '' }} required>
+                                            <label for="male">👨 Laki-laki</label>
+                                        </div>
+                                        <div class="gender-option">
+                                            <input type="radio" name="gender" id="female" value="female"
+                                                {{ old('gender') == 'female' ? 'checked' : '' }} required>
+                                            <label for="female">👩 Perempuan</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-gold w-100">
+                                    Lanjutkan ke Pembayaran
+                                </button>
+                            </form>
                         @else
+                            <!-- Tampilan Jika Data Flight Kosong -->
                             <div class="alert alert-warning mb-4">
                                 Data penerbangan tidak ditemukan. Silakan pilih penerbangan kembali.
                             </div>
+                            <a href="{{ url('/') }}" class="btn btn-gold w-100 text-center text-decoration-none">
+                                🔍 Cari Penerbangan Kembali
+                            </a>
                         @endif
 
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                <ul class="mb-0">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                        <form action="{{ route('bookings.processPassenger') }}" method="POST">
-                            @csrf
-
-                            <!-- Hidden inputs agar data flight & kursi ikut terkirim -->
-                            @if($flight)
-                                <input type="hidden" name="flight_id" value="{{ $flight->id }}">
-                            @endif
-                            <input type="hidden" name="seat_number" value="{{ $bookingData['seat_number'] ?? '' }}">
-                            <input type="hidden" name="price" value="{{ $bookingData['price'] ?? 0 }}">
-
-                            <!-- Nama Lengkap -->
-                            <div class="mb-3">
-                                <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
-                                <input type="text" name="full_name" class="form-control"
-                                    value="{{ old('full_name') }}" placeholder="Sesuai KTP/Paspor" required>
-                                <small class="text-muted">Masukkan nama lengkap sesuai identitas</small>
-                            </div>
-
-                            <!-- Tanggal Lahir -->
-                            <div class="mb-3">
-                                <label class="form-label">Tanggal Lahir <span class="text-danger">*</span></label>
-                                <input type="date" name="date_of_birth" class="form-control"
-                                    value="{{ old('date_of_birth') }}" required>
-                                <small class="text-muted">Format: YYYY-MM-DD</small>
-                            </div>
-
-                            <!-- No NIK / Paspor -->
-                            <div class="mb-3">
-                                <label class="form-label">No. NIK / Paspor <span class="text-danger">*</span></label>
-                                <input type="text" name="id_card_number" class="form-control"
-                                    value="{{ old('id_card_number') }}" placeholder="Masukkan NIK atau Nomor Paspor" required>
-                                <small class="text-muted">Minimal 10 karakter</small>
-                            </div>
-
-                            <!-- Jenis Kelamin -->
-                            <div class="mb-4">
-                                <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
-                                <div class="gender-options">
-                                    <div class="gender-option">
-                                        <input type="radio" name="gender" id="male" value="male"
-                                            {{ old('gender') == 'male' ? 'checked' : '' }} required>
-                                        <label for="male">👨 Laki-laki</label>
-                                    </div>
-                                    <div class="gender-option">
-                                        <input type="radio" name="gender" id="female" value="female"
-                                            {{ old('gender') == 'female' ? 'checked' : '' }} required>
-                                        <label for="female">👩 Perempuan</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-gold w-100" {{ !$flight ? 'disabled' : '' }}>
-                                Lanjutkan ke Pembayaran
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>
