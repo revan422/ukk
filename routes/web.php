@@ -25,7 +25,7 @@ Route::get('/login/manager', [AuthController::class, 'showLogin'])->name('manage
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Register khusus per role (TANPA LOGIN) - TIDAK ADA CS
+// Register khusus per role (TANPA LOGIN)
 Route::get('/admin/register', [AuthController::class, 'showRegister'])->name('admin.register');
 Route::get('/customer/register', [AuthController::class, 'showRegister'])->name('customer.register');
 Route::get('/staff/register', [AuthController::class, 'showRegister'])->name('staff.register');
@@ -33,8 +33,6 @@ Route::get('/manager/register', [AuthController::class, 'showRegister'])->name('
 
 // Register default untuk pelanggan/customer
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-
-// POST route untuk proses register
 Route::post('/register', [AuthController::class, 'register']);
 
 // Routes Forgot & Reset Password
@@ -43,9 +41,7 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->middleware('guest')->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('guest')->name('password.update');
 
-// RajaOngkir integration removed
-
-// Routes Email Verification (menggunakan fitur bawaan Laravel)
+// Routes Email Verification
 Route::get('/email/verify', [VerificationController::class, 'showNotice'])
     ->middleware('auth')
     ->name('verification.notice');
@@ -58,7 +54,6 @@ Route::post('/email/verification-notification', [VerificationController::class, 
     ->middleware(['auth', 'throttle:6,1'])
     ->name('verification.resend');
 
-// Route untuk kirim ulang verifikasi dari halaman expired (tanpa auth)
 Route::post('/email/verification-send', [VerificationController::class, 'sendToEmail'])
     ->middleware(['throttle:3,1'])
     ->name('verification.send');
@@ -67,12 +62,15 @@ Route::post('/email/verification-send', [VerificationController::class, 'sendToE
 Route::get('/flights', [FlightController::class, 'index'])->name('flights.index');
 Route::get('/flights/search', [FlightController::class, 'search'])->name('flights.search');
 
-// Routes Booking Flow (Bisa diakses tanpa login sampai pembayaran)
+// Routes Booking Flow (Form & Konfirmasi Pilihan)
 Route::get('/bookings/select-seat/{flightId}', [BookingController::class, 'selectSeat'])->name('bookings.selectSeat');
 Route::post('/bookings/process-seat', [BookingController::class, 'processSeat'])->name('bookings.processSeat');
 Route::get('/bookings/passenger', [BookingController::class, 'passengerForm'])->name('bookings.passenger');
 Route::post('/bookings/process-passenger', [BookingController::class, 'processPassenger'])->name('bookings.processPassenger');
 Route::get('/bookings/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
+
+// Routes Midtrans Webhook Callback (HARUS DI LUAR AUTH)
+Route::post('/midtrans/callback', [MidtransController::class, 'callback'])->name('midtrans.callback');
 
 // Routes Customer (WAJIB Login)
 Route::middleware(['auth'])->group(function () {
@@ -80,10 +78,15 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Booking & Pembayaran (Diselaraskan dengan Controller)
     Route::get('/bookings/history', [BookingController::class, 'history'])->name('bookings.history');
-    Route::post('/bookings/process-payment', [BookingController::class, 'processPayment'])->name('bookings.processPayment');
+    Route::post('/bookings/process-payment', [BookingController::class, 'processBooking'])->name('bookings.processPayment');
     Route::get('/bookings/{bookingId}', [BookingController::class, 'show'])->name('bookings.show');
     Route::get('/bookings/success/{bookingId}', [BookingController::class, 'success'])->name('bookings.success');
+
+    // Endpoint AJAX Midtrans (Dimasukkan ke Auth demi keamanan)
+    Route::post('/payment', [BookingController::class, 'createPaymentToken'])->name('payment.create');
+    Route::get('/payment/status/{booking}', [MidtransController::class, 'checkStatus'])->name('payment.status');
 
     // Routes Profile Settings
     Route::get('/profile/settings', [ProfileController::class, 'index'])->name('profile.settings');
@@ -154,8 +157,3 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/staff/manifest/{flightId}', [StaffController::class, 'manifest'])->name('staff.manifest');
     Route::get('/staff/flights', [StaffController::class, 'flightMonitoring'])->name('staff.flights');
 });
-
-// Midtrans Payment Routes
-Route::post('/payment', [MidtransController::class, 'createTransaction'])->name('payment.create');
-Route::post('/midtrans/callback', [MidtransController::class, 'callback'])->name('midtrans.callback');
-Route::get('/payment/status/{booking}', [MidtransController::class, 'checkStatus'])->name('payment.status');
