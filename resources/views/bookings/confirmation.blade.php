@@ -1,135 +1,54 @@
 <!DOCTYPE html>
-
 <html lang="id">
-
-
-
 <head>
-
     <meta charset="UTF-8">
-
-    <title>Konfirmasi Pemesanan</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfirmasi Pemesanan - SkyLine</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
-
-
-
 <body class="bg-light">
-
-    <nav class="navbar navbar-dark bg-primary">
-
-        <div class="container">
-
-            <a class="navbar-brand" href="#">Konfirmasi Pemesanan</a>
-
-        </div>
-
-    </nav>
-
-
-
-    <div class="container mt-5">
-
+    <div class="container py-5">
         <div class="row justify-content-center">
-
             <div class="col-md-8">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body p-4">
+                        <h3 class="fw-bold text-center mb-4">Konfirmasi Pemesanan</h3>
 
-                <div class="card shadow">
-
-                    <div class="card-header bg-white">
-
-                        <h4 class="mb-0">Konfirmasi Pemesanan</h4>
-
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="alert alert-info">
-
-                            <h6>Ringkasan Pemesanan:</h6>
-
-                            <p class="mb-1"><strong>Maskapai:</strong> {{ $flight->airline->name }} -
-
-                                {{ $flight->flight_number }}</p>
-
-                            <p class="mb-1"><strong>Rute:</strong> {{ $flight->departureAirport->name }} →
-
-                                {{ $flight->arrivalAirport->name }}</p>
-
-                            <p class="mb-1"><strong>Tanggal:</strong> {{ $flight->departure_time->format('d M Y') }}
-
-                            </p>
-
-                            <p class="mb-1"><strong>Waktu:</strong> {{ $flight->departure_time->format('H:i') }} -
-
-                                {{ $flight->arrival_time->format('H:i') }}</p>
-
-                            <p class="mb-1"><strong>Kursi:</strong> {{ $seat->seat_number }}
-
-                                ({{ ucfirst($seat->seat_class ?? $bookingData['seat_class'] ?? 'Economy') }})</p>
-
-                            <p class="mb-1"><strong>Penumpang:</strong> {{ $bookingData['passenger']['full_name'] }}
-
-                            </p>
-
-
-
-                            <hr>
-
-                            <h5 class="text-success mb-0">Total Pembayaran: Rp
-
-                                {{ number_format($bookingData['price'], 0, ',', '.') }}</h5>
-
-                        </div>
-
-
-
-                        <form action="{{ route('bookings.processPayment') }}" method="POST">
-
-                            @csrf
-
-                            <div class="alert alert-warning">
-
-                                <p class="mb-0">
-
-                                    <strong>Pembayaran melalui Midtrans Snap.</strong>
-
-                                    Setelah menekan tombol "Booking Sekarang", Anda akan diarahkan ke halaman detail booking
-
-                                    untuk melanjutkan pembayaran dengan berbagai metode pembayaran yang tersedia.
-
-                                </p>
-
+                        <!-- Detail Penerbangan -->
+                        <div class="card mb-3 bg-light border-0">
+                            <div class="card-body">
+                                <h5 class="fw-bold text-primary">{{ $flight->airline->name ?? 'Maskapai' }}</h5>
+                                <p class="mb-1"><strong>Rute:</strong> {{ $flight->departureAirport->name ?? '-' }} → {{ $flight->arrivalAirport->name ?? '-' }}</p>
+                                <p class="mb-0"><strong>Nomor Kursi:</strong> <span class="badge bg-success fs-6">{{ $seat }}</span></p>
                             </div>
-
-                            <button type="submit" class="btn btn-primary w-100 btn-lg">
-
-                                <i class="bi bi-check-circle"></i> Booking Sekarang
-
-                            </button>
-
-                        </form>
-
-                        <div class="mt-3 text-center">
-
-                            <a href="{{ route('bookings.selectSeat', $flight->id) }}" class="text-muted">Kembali pilih kursi</a>
-
                         </div>
 
+                        <!-- Detail Penumpang -->
+                        <div class="card mb-4 border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="fw-bold">Data Penumpang:</h6>
+                                <p class="mb-1"><strong>Nama:</strong> {{ $bookingData['passenger']['full_name'] ?? '-' }}</p>
+                                <p class="mb-0"><strong>Jenis Kelamin:</strong> {{ ($bookingData['passenger']['gender'] ?? '') == 'male' ? 'Laki-laki' : 'Perempuan' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Total Bayar -->
+                        <div class="d-flex justify-content-between align-items-center mb-4 p-3 border rounded">
+                            <span class="fs-5 fw-bold">Total Pembayaran:</span>
+                            <span class="fs-4 fw-bold text-danger">Rp {{ number_format($bookingData['price'] ?? 0, 0, ',', '.') }}</span>
+                        </div>
+
+                        <!-- Form Submit -->
+                        <form action="{{ route('bookings.processBooking') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-warning w-100 fw-bold py-2 fs-5 text-dark">
+                                Buat Pesanan & Lanjut Bayar
+                            </button>
+                        </form>
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
 </body>
-
-
-
 </html>
