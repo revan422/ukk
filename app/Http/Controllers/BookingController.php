@@ -13,17 +13,20 @@ use Midtrans\Snap;
 
 class BookingController extends Controller
 {
-    public function processPayment(Request $request)
+    /**
+     * 1. Membuat Data Booking & Passenger dari Session, lalu Redirect ke Halaman Detail
+     */
+    public function processBooking(Request $request)
     {
-        // 1. Cek apakah session booking_data tersedia
         $bookingData = session('booking_data');
         if (!$bookingData) {
-            return redirect()->route('flights.index')->with('error', 'Sesi pemesanan telah kadaluarsa. Silakan pilih penerbangan kembali.');
+            return redirect()->route('flights.index')
+                ->with('error', 'Sesi pemesanan telah kadaluarsa. Silakan pilih penerbangan kembali.');
         }
 
         $flight = Flight::findOrFail($bookingData['flight_id']);
         
-        // 2. Buat Data Booking
+        // Simpan Booking
         $bookingCode = 'TRX-' . strtoupper(Str::random(8));
         $booking = Booking::create([
             'user_id'          => auth()->id(),
@@ -34,7 +37,7 @@ class BookingController extends Controller
             'status'           => 'pending',
         ]);
 
-        // 3. Buat Data Passenger (Sesuai PDM)
+        // Simpan Passenger
         Passenger::create([
             'booking_id'  => $booking->id,
             'full_name'   => $bookingData['passenger']['full_name'],
@@ -42,7 +45,26 @@ class BookingController extends Controller
             'seat_number' => $bookingData['seat_number'] ?? $bookingData['seat_id'] ?? '1A',
         ]);
 
-        // 4. Konfigurasi Midtrans
+        // Hapus session booking sementara
+        session()->forget('booking_data');
+
+        // Redirect ke detail booking
+        return redirect()->route('bookings.show', $booking->id);
+    }
+
+    /**
+     * 2. Endpoint AJAX untuk route('payment.create')
+     * Menggenerasi Snap Token Midtrans berdasarkan booking_id
+     */
+    public function createPaymentToken(Request $request)
+    {
+        $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+        ]);
+
+        $booking = Booking::with(['passenger', 'user'])->findOrFail($request->booking_id);
+
+        // Konfigurasi Midtrans
         Config::$serverKey = config('services.midtrans.server_key');
         Config::$isProduction = config('services.midtrans.is_production', false);
         Config::$isSanitized = true;
@@ -50,34 +72,52 @@ class BookingController extends Controller
 
         $params = [
             'transaction_details' => [
-                'order_id'     => $bookingCode,
-                'gross_amount' => (int) $bookingData['price'],
+                'order_id'     => $booking->booking_code,
+                'gross_amount' => (int) $booking->total_price,
             ],
             'customer_details' => [
-                'first_name' => $bookingData['passenger']['full_name'],
+                'first_name' => $booking->passenger->full_name ?? auth()->user()->name,
                 'email'      => auth()->user()->email,
             ],
         ];
 
         try {
             $snapToken = Snap::getSnapToken($params);
+
+            // Buat / Perbarui Record Pembayaran
+            Payment::updateOrCreate(
+                ['booking_id' => $booking->id],
+                [
+                    'payment_method'   => 'Midtrans',
+                    'amount'           => $booking->total_price,
+                    'payment_status'   => 'pending',
+                    'transaction_code' => $booking->booking_code,
+                ]
+            );
+
+            // Kembalikan Response JSON untuk JavaScript di show.blade.php
+            return response()->json(['snap_token' => $snapToken]);
+
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal terhubung ke Midtrans: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal terhubung ke Midtrans: ' . $e->getMessage()], 500);
         }
+    }
 
-        // 5. Buat Record Pembayaran Awal (Sesuai PDM)
-        Payment::create([
-            'booking_id'       => $booking->id,
-            'payment_method'   => 'Midtrans',
-            'amount'           => $bookingData['price'],
-            'payment_status'   => 'pending',
-            'transaction_code' => $bookingCode,
-        ]);
+    /**
+     * 3. Menampilkan Halaman Detail Booking
+     */
+    public function show($id)
+    {
+        $booking = Booking::with([
+            'flight.airline', 
+            'flight.departureAirport', 
+            'flight.arrivalAirport', 
+            'passenger', 
+            'payment'
+        ])
+        ->where('user_id', auth()->id())
+        ->findOrFail($id);
 
-        // Hapus session booking sementara
-        session()->forget('booking_data');
-
-        // Redirect ke detail booking membawa snapToken
-        return redirect()->route('bookings.show', $booking->id)->with('snapToken', $snapToken);
+        return view('bookings.show', compact('booking'));
     }
 }
