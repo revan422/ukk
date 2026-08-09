@@ -181,6 +181,22 @@
         <div class="main-card">
             <div class="card-body p-4">
                 <h3 class="fw-bold mb-3" style="color: #0a192f;">Pilih Kursi Anda</h3>
+                <!-- Tampilkan Pesan Error/Gagal jika Ada -->
+@if(session('error'))
+    <div class="alert alert-danger mb-3">
+        {{ session('error') }}
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-danger mb-3">
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
                 <p class="text-muted mb-4">{{ $flight->airline->name ?? 'Maskapai' }} - {{ $flight->flight_number }}</p>
 
                 <!-- Flight Details -->
